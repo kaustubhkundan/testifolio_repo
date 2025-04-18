@@ -3,29 +3,29 @@ import Link from "next/link"
 
 export function HowItWorks() {
   return (
-    <section className="py-16 md:py-24 bg-white">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <section className="py-10 md:py-16 bg-white">
+      <div className="container max-w-8xl">
         {/* Section Header */}
-        <div className="mb-20 text-left">
-          <h2 className="text-7xl font-bold text-[#002b5b] mb-4 relative inline-block">
+        <div className="mb-14 text-left">
+          <h2 className="text-8xl font-medium text-[#002b5b] mb-4 relative inline-block">
             How it Works
-            <div className="absolute -bottom-2 left-0 w-full h-1.5 bg-gradient-to-r from-[#7c5cff] to-[#cd5cff]"></div>
+            <div className="absolute -bottom-2 right-0 w-[52%] h-1.5 bg-gradient-to-r from-[#7c5cff] to-[#cd5cff]"></div>
           </h2>
         </div>
 
         {/* Feature 1 - Send a Testimonial Request */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-24 items-center ml-[40%]">         
-          <div className="order-2 md:order-2">
-            <h3 className="text-3xl font-bold text-[#002b5b] mb-4">Send a Testimonial Request</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 -mb-10 ml-[50%]">         
+          <div className="order-2 md:order-2 w-full">
+            <h3 className="text-4xl font-bold text-[#002b5b] mb-4">Send a Testimonial Request</h3>
             <p className="text-lg text-[#5b5772]">Share your forms with a simple link via email, SMS, or QR code.</p>
           </div>
           <div className="order-2 md:order-1">
-            <Image src="/howitworks1.svg" alt="Testimonial request form" width={320} height={400} className="mx-auto" />
+            <Image src="/howitworks1.svg" alt="Testimonial request form" width={400} height={400} className="-mx-6" />
           </div>
         </div>
 
         {/* Feature 2 - AI Helps Customers */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-24 items-center mr-[30%]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 -mb-10 items-center mr-[40%]">
           <div>
             <Image src="/howitworks2.svg" alt="AI robot character" width={300} height={300} className="mx-auto" />
           </div>
@@ -54,7 +54,7 @@ export function HowItWorks() {
         </div>
 
         {/* Feature 3 - Generate & Share */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-24 items-center ml-[40%]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 -mb-10 items-center ml-[50%]">
           <div className="order-2 md:order-1 text-right md:text-left">
             <h3 className="text-3xl font-bold text-[#002b5b] mb-4">
               Generate & Share

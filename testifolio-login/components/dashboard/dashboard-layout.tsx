@@ -30,8 +30,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
       >
         <div className={`flex h-16 items-center border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"} px-4`}>
-          <Link href="/dashboard" className="flex items-center">
-            <span className="text-2xl font-bold text-[#7c5cff]">testifolio</span>
+        <Link href="/dashboard" className="relative w-[100%] h-full">
+            <Image src="/logosbg.svg" alt="User" fill className="object-contain" />
           </Link>
         </div>
 

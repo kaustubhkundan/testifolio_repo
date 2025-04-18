@@ -28,7 +28,7 @@ export function PricingSection() {
           <div className="inline-flex rounded-full bg-gray-100 p-1 shadow-sm">
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`rounded-full px-8 py-2.5 text-sm font-medium transition-colors ${
+              className={`rounded-full px-8 py-2.5 text-base font-medium transition-colors ${
                 billingCycle === "monthly" ? "bg-[#7c5cff] text-white shadow-sm" : "bg-transparent text-[#4a5568]"
               }`}
             >
@@ -36,7 +36,7 @@ export function PricingSection() {
             </button>
             <button
               onClick={() => setBillingCycle("yearly")}
-              className={`rounded-full px-8 py-2.5 text-sm font-medium transition-colors ${
+              className={`rounded-full px-8 py-2.5 text-base font-medium transition-colors ${
                 billingCycle === "yearly" ? "bg-[#7c5cff] text-white shadow-sm" : "bg-transparent text-[#4a5568]"
               }`}
             >

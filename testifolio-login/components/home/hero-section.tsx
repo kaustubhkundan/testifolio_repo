@@ -29,13 +29,14 @@ export function HeroSection() {
           <div className="mt-8">
             <p className="mb-3 text-sm text-[#5b5772]">Trusted by 1,500+ businesses</p>
             <div className="flex items-center gap-6">
-              <Image src="/shopify-leaf-grayscale.png" alt="Shopify" width={30} height={30} className="opacity-70" />
-              <Image src="/stripe-logo-grayscale.png" alt="Stripe" width={60} height={30} className="opacity-70" />
-              <Image src="/slack-grayscale-logo.png" alt="Slack" width={60} height={30} className="opacity-70" />
-            </div>
+              <Image src="/shopify.svg" alt="Shopify" width={30} height={30} className="opacity-70" />
+              <Image src="/stripe.svg" alt="Stripe" width={30} height={30} className="opacity-70" />
+              <Image src="/figma.svg" alt="Slack" width={30} height={30} className="opacity-70" />
+            </div> 
           </div>
         </div>
         <div className="relative w-full max-w-lg">
+          {/* Background illustration */}
           <Image
             src="/homepage1.svg"
             alt="Testimonials illustration"
@@ -44,7 +45,18 @@ export function HeroSection() {
             className="h-auto w-full"
             priority
           />
+
+          {/* Star icon overlay */}
+          <Image
+            src="/homepage9.svg"
+            alt="Star icon"
+            width={300} // Adjust size based on design
+            height={300}
+            className="absolute top-[33%] right-[50%] z-10"
+            priority
+          />
         </div>
+
       </div>
     </div>
   )

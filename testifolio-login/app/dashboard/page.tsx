@@ -24,6 +24,7 @@ import {
 
 export default function DashboardPage() {
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [activeTab, setActiveTab] = useState("dashboard")
 
   const recentTestimonials = [
     {
@@ -84,77 +85,51 @@ export default function DashboardPage() {
           isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
         }`}
       >
-        <div className={`flex h-16 items-center border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"} px-4`}>
-          <Link href="/dashboard" className="flex items-center">
-            <span className="text-2xl font-bold text-[#7c5cff]">testifolio</span>
+        <div className={`flex h-16 border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"} px-4`}>
+          <Link href="/dashboard" className="relative w-[100%] h-full">
+            <Image src="/logosbg.svg" alt="User" fill className="object-contain" />
           </Link>
         </div>
 
         <div className="flex flex-1 flex-col overflow-y-auto p-4">
           <nav className="flex flex-1 flex-col gap-1">
-            <Link
-              href="/dashboard"
-              className={`flex items-center gap-3 rounded-md ${
-                isDarkMode ? "bg-[#2d2d3a] text-[#a5b4fc]" : "bg-[#f0eaff] text-[#7c5cff]"
-              } px-3 py-2 transition-colors`}
-            >
-              <LayoutDashboard className="h-5 w-5" />
-              <span>Dashboard</span>
-            </Link>
-            <Link
-              href="/dashboard/testimonials"
-              className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
-                isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <MessageSquare className="h-5 w-5" />
-              <span>Testimonials</span>
-            </Link>
-            <Link
-              href="/dashboard/collection-forms"
-              className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
-                isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <FileText className="h-5 w-5" />
-              <span>Collection Forms</span>
-            </Link>
-            <Link
-              href="/dashboard/creative-studio"
-              className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
-                isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <PaintBrush className="h-5 w-5" />
-              <span>Creative Studio</span>
-            </Link>
-            <Link
-              href="/dashboard/widgets"
-              className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
-                isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <Grid className="h-5 w-5" />
-              <span>Widgets</span>
-            </Link>
-            <Link
-              href="/dashboard/analytics"
-              className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
-                isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <BarChart3 className="h-5 w-5" />
-              <span>Analytics</span>
-            </Link>
-            <Link
-              href="/dashboard/settings"
-              className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
-                isDarkMode ? "text-gray-300 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              <Settings className="h-5 w-5" />
-              <span>Settings</span>
-            </Link>
+            {[
+              { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+              { href: "/dashboard/testimonials", icon: MessageSquare, label: "Testimonials", id: "testimonials" },
+              {
+                href: "/dashboard/collection-forms",
+                icon: FileText,
+                label: "Collection Forms",
+                id: "collection-forms",
+              },
+              { href: "/dashboard/creative-studio", icon: PaintBrush, label: "Creative Studio", id: "creative-studio" },
+              { href: "/dashboard/widgets", icon: Grid, label: "Widgets", id: "widgets" },
+              { href: "/dashboard/analytics", icon: BarChart3, label: "Analytics", id: "analytics" },
+              { href: "/dashboard/settings", icon: Settings, label: "Settings", id: "settings" },
+            ].map((item) => {
+              const isActive = activeTab === item.id
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-md px-3 py-2 transition-colors ${
+                    isActive
+                      ? isDarkMode
+                        ? "bg-[#2d2d3a] text-[#a5b4fc]"
+                        : "bg-[#f0eaff] text-[#7c5cff]"
+                      : isDarkMode
+                        ? "text-gray-300 hover:bg-gray-800"
+                        : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  onClick={(e) => {
+                    setActiveTab(item.id)
+                  }}
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
           </nav>
         </div>
 

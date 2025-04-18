@@ -70,77 +70,8 @@ export default function Login() {
 
             {/* Right Section */}
             <div className="w-full md:w-1/2 bg-[#efe7ff] p-6 md:p-0 relative overflow-hidden">
-                <div className="relative h-full flex items-center justify-center">
-                    {/* Astronaut Image */}
-                    <div className="absolute top-20 right-10 md:right-4 lg:right-10">
-                        <Image src="/astronaut.svg" alt="Astronaut" width={200} height={200} className="z-10" />
-                    </div>
+            <Image src="/rightsection.svg" alt="TestiFolio Logo" width={600} height={600} />
 
-                    {/* Star Character */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                        <div className="relative w-[250px] h-[250px]">
-                            {/* Top image (in front) */}
-                            <Image
-                                src="/startexplor.svg"
-                                alt="Star Character"
-                                width={250}
-                                height={250}
-                                className="relative z-10"
-                            />
-
-                            {/* Background image (behind) */}
-                            <Image
-                                src="/star2.svg"
-                                alt="Star Character"
-                                width={250}
-                                height={250}
-                                className="absolute top-0 left-0 z-0"
-                            />
-                        </div>
-
-                    </div>
-
-                    {/* Testimonial Cards */}
-                    <div className="absolute top-32 left-1/2 transform -translate-x-1/2 bg-white p-5 rounded-xl shadow-lg w-64 md:w-72">
-                        <div className="flex items-center gap-2 mb-2">
-                            <h3 className="font-bold text-lg">Folio the Star</h3>
-                        </div>
-                        <div className="flex mb-2">
-                            {[...Array(5)].map((_, i) => (
-                                <Star key={i} className="w-5 h-5 fill-[#ffc72a] text-[#ffc72a]" />
-                            ))}
-                        </div>
-                        <p className="text-sm text-[#5b5772]">
-                            Designed to help you collect powerful testimonials in minutes and show them effectively to the world! No
-                            tech skills needed.
-                        </p>
-                    </div>
-
-                    {/* Bottom Testimonial */}
-                    <div className="absolute bottom-40 left-10 md:right-4 lg:right-10 bg-white p-5 rounded-xl shadow-lg w-64 md:w-72">
-                        <p className="text-sm text-[#5b5772] mb-4">
-                            This tool saved me hours! Super easy to use and makes my brand look way more professional.
-                        </p>
-                        <div className="flex items-center gap-3">
-                            <Image
-                                src="/confident-professional.png"
-                                alt="Alyssa Hilton"
-                                width={50}
-                                height={50}
-                                className="rounded-full"
-                            />
-                            <div>
-                                <h3 className="font-bold">ALYSSA HILTON</h3>
-                                <p className="text-xs text-[#706d8a]">Gypsy Trip Boutique Owner</p>
-                                <div className="flex">
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} className="w-4 h-4 fill-[#ffc72a] text-[#ffc72a]" />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     )

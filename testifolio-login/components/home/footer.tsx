@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Facebook, Linkedin, Twitter } from "lucide-react"
+import Image from "next/image"
 
 export function Footer() {
   return (
@@ -11,8 +12,14 @@ export function Footer() {
             <div className="mb-4">
               <Link href="/" className="flex items-center">
                 <div className="flex items-center">
-                  <span className="text-2xl font-bold text-white">testifolio</span>
-                </div>
+                  <Image
+                    src="/footericon.svg"
+                    alt="Testimonials illustration"
+                    width={600}
+                    height={600}
+                    className="h-auto w-full"
+                    priority
+                  />                </div>
               </Link>
             </div>
             <p className="text-sm text-gray-400">Transform customer testimonials into powerful marketing content.</p>

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Menu, X } from "lucide-react"
+import Image from "next/image"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -13,10 +14,16 @@ export function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center">
           <div className="flex items-center">
-            <div className="mr-1 h-6 w-6 rounded-full bg-[#7c5cff] text-white">
-              <span className="flex h-full w-full items-center justify-center text-xs font-bold">T</span>
+            <div>
+            <Image
+                    src="/logosbg.svg"
+                    alt="Testimonials illustration"
+                    width={600}
+                    height={600}
+                    className="h-auto w-full"
+                    priority
+                  />
             </div>
-            <span className="text-2xl font-bold text-[#7c5cff]">testifolio</span>
           </div>
         </Link>
 
