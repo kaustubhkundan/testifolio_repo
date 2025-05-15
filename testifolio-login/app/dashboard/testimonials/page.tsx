@@ -1,9 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
@@ -11,128 +15,125 @@ import {
   Edit,
   FileText,
   Home,
-  Info,
+  Loader2,
   Pencil,
   Search,
   Share2,
+  Star,
   X,
 } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 import DashboardLayout from "@/components/dashboard/dashboard-layout"
+import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase"
+
+// Define types
+type TestimonialStatus = "Approved" | "Pending" | "Published"
+
+interface Customer {
+  name: string
+  company: string
+  avatar?: string
+}
+
+interface Testimonial {
+  id: number | string
+  customer: Customer
+  text: string
+  type: string
+  source: string
+  status: TestimonialStatus
+  rating?: number
+  created_at?: string
+}
 
 export default function TestimonialsPage() {
+  const router = useRouter()
+  const { user } = useAuth()
+
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [showImported, setShowImported] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const testimonials = [
-    {
-      id: 1,
-      customer: {
-        name: "Jane Cooper",
-        company: "The Walt Disney Company",
-        avatar: "/jane-cooper.png",
-      },
-      text: "Lorem ipsum dolor sit amet, consectetur...",
-      type: "Written Testimonials",
-      source: "Email",
-      status: "Approved",
-    },
-    {
-      id: 2,
-      customer: {
-        name: "Esther Howard",
-        company: "Louis Vuitton",
-        avatar: "/esther-howard.png",
-      },
-      text: "Lorem ipsum dolor sit amet, consectetur...",
-      type: "Written Testimonials",
-      source: "Website",
-      status: "Pending",
-    },
-    {
-      id: 3,
-      customer: {
-        name: "Brooklyn Simmons",
-        company: "General Electric",
-        avatar: "/brooklyn-simmons.png",
-      },
-      text: "Lorem ipsum dolor sit amet, consectetur...",
-      type: "Written Testimonials",
-      source: "QR",
-      status: "Published",
-    },
-    {
-      id: 4,
-      customer: {
-        name: "Guy Hawkins",
-        company: "Mitsubishi",
-        avatar: "/guy-hawkins.png",
-      },
-      text: "Lorem ipsum dolor sit amet, consectetur...",
-      type: "Written Testimonials",
-      source: "Google",
-      status: "Approved",
-    },
-    {
-      id: 5,
-      customer: {
-        name: "Jacob Jones",
-        company: "Louis Vuitton",
-        avatar: "/jacob-jones.png",
-      },
-      text: "Lorem ipsum dolor sit amet, consectetur...",
-      type: "Written Testimonials",
-      source: "Amazon",
-      status: "Approved",
-    },
-    {
-      id: 6,
-      customer: {
-        name: "Guy Hawkins",
-        company: "Louis Vuitton INC",
-        avatar: "/guy-hawkins-2.png",
-      },
-      text: "Lorem ipsum dolor sit amet, consectetur...",
-      type: "Written Testimonials",
-      source: "Email",
-      status: "Published",
-    },
-    {
-      id: 7,
-      customer: {
-        name: "Robert Fox",
-        company: "Louis Vuitton LTD",
-        avatar: "/robert-fox.png",
-      },
-      text: "Lorem ipsum dolor sit amet, consectetur...",
-      type: "Written Testimonials",
-      source: "Amazon",
-      status: "Approved",
-    },
-    {
-      id: 8,
-      customer: {
-        name: "Leslie Alexander",
-        company: "Louis Vuitton",
-        avatar: "/leslie-alexander.png",
-      },
-      text: "Lorem ipsum dolor sit amet, consectetur...",
-      type: "Written Testimonials",
-      source: "QR",
-      status: "Pending",
-    },
-  ]
+  // Text testimonial form state
+  const [textTestimonial, setTextTestimonial] = useState({
+    customerName: "",
+    customerCompany: "",
+    testimonialText: "",
+    rating: 5,
+  })
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitSuccess, setSubmitSuccess] = useState(false)
 
-  const importSources = [
-    { id: "text", name: "Text Testimonial", logo: "/text-testimonial-icon.png" },
-    { id: "google", name: "Google", logo: "/google-icon.png" },
-    { id: "yelp", name: "Yelp", logo: "/yelp-icon.png" },
-    { id: "facebook", name: "Facebook", logo: "/facebook-icon.png" },
-    { id: "trustpilot", name: "Trustpilot", logo: "/trustpilot-icon.png" },
-    { id: "amazon", name: "Amazon", logo: "/amazon-icon.png" },
-  ]
+  // Fetch testimonials from Supabase
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      if (!user) return
+
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        const { data, error } = await supabase
+          .from("testimonials")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+
+        if (error) {
+          throw error
+        }
+
+        if (data && data.length > 0) {
+          // Transform data to match our Testimonial interface
+          const formattedTestimonials = data.map((item) => ({
+            id: item.id,
+            customer: {
+              name: item.customer_name,
+              company: item.customer_company,
+              avatar: item.customer_avatar || getRandomAvatar(),
+            },
+            text: item.testimonial_text,
+            type: "Written Testimonials",
+            source: item.source || "Manual Entry",
+            status: item.status as TestimonialStatus,
+            rating: item.rating,
+            created_at: item.created_at,
+          }))
+
+          setTestimonials(formattedTestimonials)
+          setShowImported(formattedTestimonials.length > 0)
+        }
+      } catch (err) {
+        console.error("Error fetching testimonials:", err)
+        setError("Failed to load testimonials. Please try again.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchTestimonials()
+  }, [user, supabase])
+
+  // Get random avatar for testimonials without one
+  const getRandomAvatar = () => {
+    const avatars = [
+      "/stylized-jc-initials.png",
+      "/abstract-geometric-EH.png",
+      "/abstract-blue-swirls.png",
+      "/abstract-geometric-gh.png",
+      "/guy-hawkins-2.png",
+      "/robert-fox.png",
+      "/leslie-alexander.png",
+    ]
+    return avatars[Math.floor(Math.random() * avatars.length)]
+  }
 
   const handleImportClick = () => {
     setShowImportModal(true)
@@ -141,14 +142,172 @@ export default function TestimonialsPage() {
   const handleCloseModal = () => {
     setShowImportModal(false)
     setSelectedSource(null)
+    setSubmitSuccess(false)
+    setFormErrors({})
+    setTextTestimonial({
+      customerName: "",
+      customerCompany: "",
+      testimonialText: "",
+      rating: 5,
+    })
   }
 
   const handleSourceSelect = (sourceId: string) => {
-    setSelectedSource(sourceId)
+    if (sourceId === "text") {
+      setSelectedSource(sourceId)
+    } else {
+      // Show a message that only text testimonials are available now
+      alert("Coming soon! Currently only Text Testimonial import is available.")
+    }
   }
 
   const handleBackToSources = () => {
     setSelectedSource(null)
+    setSubmitSuccess(false)
+  }
+
+  // Handle text testimonial form input changes
+  const handleTextTestimonialChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setTextTestimonial((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+
+    // Clear error for this field if it exists
+    if (formErrors[name]) {
+      setFormErrors((prev) => {
+        const newErrors = { ...prev }
+        delete newErrors[name]
+        return newErrors
+      })
+    }
+  }
+
+  // Handle rating change
+  const handleRatingChange = (rating: number) => {
+    setTextTestimonial((prev) => ({
+      ...prev,
+      rating,
+    }))
+  }
+
+  // Validate form
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!textTestimonial.customerName.trim()) {
+      errors.customerName = "Customer name is required"
+    }
+
+    if (!textTestimonial.customerCompany.trim()) {
+      errors.customerCompany = "Company name is required"
+    }
+
+    if (!textTestimonial.testimonialText.trim()) {
+      errors.testimonialText = "Testimonial text is required"
+    } else if (textTestimonial.testimonialText.length < 10) {
+      errors.testimonialText = "Testimonial must be at least 10 characters"
+    }
+
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  // Submit text testimonial
+  const handleSubmitTextTestimonial = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validateForm()) return
+    if (!user) {
+      setError("You must be logged in to submit a testimonial")
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+
+      // Insert testimonial into Supabase
+      const { data, error } = await supabase
+        .from("testimonials")
+        .insert([
+          {
+            user_id: user.id,
+            customer_name: textTestimonial.customerName,
+            customer_company: textTestimonial.customerCompany,
+            testimonial_text: textTestimonial.testimonialText,
+            rating: textTestimonial.rating,
+            source: "Manual Entry",
+            status: "Pending",
+            type: "text",
+          },
+        ])
+        .select()
+
+      if (error) throw error
+
+      // Add the new testimonial to the state
+      if (data && data.length > 0) {
+        const newTestimonial: Testimonial = {
+          id: data[0].id,
+          customer: {
+            name: data[0].customer_name,
+            company: data[0].customer_company,
+            avatar: getRandomAvatar(),
+          },
+          text: data[0].testimonial_text,
+          type: "Written Testimonials",
+          source: "Manual Entry",
+          status: "Pending",
+          rating: data[0].rating,
+          created_at: data[0].created_at,
+        }
+
+        setTestimonials((prev) => [newTestimonial, ...prev])
+        setSubmitSuccess(true)
+
+        // If this is the first testimonial, show the testimonials table
+        if (testimonials.length === 0) {
+          setTimeout(() => {
+            setShowImported(true)
+            setShowImportModal(false)
+          }, 2000)
+        }
+      }
+    } catch (err) {
+      console.error("Error submitting testimonial:", err)
+      setFormErrors({
+        submit: "Failed to submit testimonial. Please try again.",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const importSources = [
+    { id: "text", name: "Text Testimonial", logo: "/text-testimonial-icon.png", isReady: true },
+    { id: "google", name: "Google", logo: "/google-icon.png", isReady: false },
+    { id: "yelp", name: "Yelp", logo: "/yelp-icon.png", isReady: false },
+    { id: "facebook", name: "Facebook", logo: "/facebook-icon.png", isReady: false },
+    { id: "trustpilot", name: "Trustpilot", logo: "/trustpilot-icon.png", isReady: false },
+    { id: "amazon", name: "Amazon", logo: "/amazon-icon.png", isReady: false },
+  ]
+
+  // Render star rating input
+  const renderStarRating = () => {
+    return (
+      <div className="flex items-center">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button key={star} type="button" onClick={() => handleRatingChange(star)} className="focus:outline-none">
+            <Star
+              className={`h-6 w-6 ${
+                star <= textTestimonial.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -167,7 +326,28 @@ export default function TestimonialsPage() {
         {/* Page Title */}
         <h1 className="mb-6 text-2xl font-bold text-gray-800">Testimonials Management</h1>
 
-        {showImported ? (
+        {isLoading ? (
+          // Loading state
+          <div className="flex h-64 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#7c5cff]" />
+            <span className="ml-2 text-lg text-gray-600">Loading testimonials...</span>
+          </div>
+        ) : error ? (
+          // Error state
+          <div className="mx-auto max-w-3xl rounded-lg border border-red-200 bg-red-50 p-8 shadow-sm">
+            <div className="flex items-center">
+              <AlertCircle className="h-6 w-6 text-red-500" />
+              <h2 className="ml-2 text-lg font-medium text-red-800">Error loading testimonials</h2>
+            </div>
+            <p className="mt-2 text-red-700">{error}</p>
+            <button
+              onClick={() => router.refresh()}
+              className="mt-4 rounded-md bg-red-100 px-4 py-2 text-red-700 hover:bg-red-200"
+            >
+              Try again
+            </button>
+          </div>
+        ) : showImported && testimonials.length > 0 ? (
           <div>
             {/* Search and Filters */}
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -236,7 +416,16 @@ export default function TestimonialsPage() {
                         <td className="whitespace-nowrap px-6 py-4">
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
-                              <div className="h-10 w-10 rounded-full bg-gray-200"></div>
+                              <div className="relative h-10 w-10 rounded-full bg-gray-200">
+                                {testimonial.customer.avatar && (
+                                  <Image
+                                    src={testimonial.customer.avatar || "/placeholder.svg"}
+                                    alt={testimonial.customer.name}
+                                    fill
+                                    className="rounded-full object-cover"
+                                  />
+                                )}
+                              </div>
                             </div>
                             <div className="ml-4">
                               <div className="font-medium text-gray-900">{testimonial.customer.name}</div>
@@ -391,101 +580,145 @@ export default function TestimonialsPage() {
                 <X className="h-5 w-5" />
               </button>
 
-              {selectedSource ? (
-                /* Source-specific import view */
-                <div>
-                  {/* Back Button */}
-                  <button
-                    onClick={handleBackToSources}
-                    className="mb-4 flex items-center text-[#7c5cff] hover:underline"
-                  >
-                    <ArrowLeft className="mr-1 h-4 w-4" />
-                    <span>Choose a different source</span>
-                  </button>
-
-                  <h2 className="mb-6 text-2xl font-bold text-gray-800">
-                    Add Testimonials from {importSources.find((source) => source.id === selectedSource)?.name}
-                  </h2>
-
-                  {/* Pro Banner */}
-                  <div className="mb-6 rounded-lg bg-[#a5b4fc] p-4 text-white">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="mr-3 rounded-full bg-white p-2">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 text-[#a5b4fc]"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <h3 className="font-medium">Become a Pro and Import Testimonials!</h3>
-                          <p className="text-sm text-white text-opacity-90">
-                            Access all features and grow your business with social proof
-                          </p>
-                        </div>
-                      </div>
-                      <button className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-[#7c5cff] hover:bg-opacity-90">
-                        Go Unlimited! <ArrowRight className="ml-1 inline-block h-4 w-4" />
+              {selectedSource === "text" ? (
+                submitSuccess ? (
+                  /* Success state */
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                      <CheckCircle2 className="h-8 w-8 text-green-500" />
+                    </div>
+                    <h2 className="mb-2 text-2xl font-bold text-gray-800">Testimonial Added Successfully!</h2>
+                    <p className="mb-6 text-center text-gray-600">
+                      Your testimonial has been added and is pending approval.
+                    </p>
+                    <div className="flex gap-4">
+                      <button
+                        onClick={handleBackToSources}
+                        className="rounded-lg border border-[#7c5cff] bg-white px-4 py-2 text-[#7c5cff] hover:bg-[#f8f7ff]"
+                      >
+                        Add Another Testimonial
+                      </button>
+                      <button
+                        onClick={handleCloseModal}
+                        className="rounded-lg bg-[#7c5cff] px-4 py-2 text-white hover:bg-[#6a4ddb]"
+                      >
+                        View All Testimonials
                       </button>
                     </div>
                   </div>
-
-                  {/* Source-specific content */}
+                ) : (
+                  /* Text testimonial form */
                   <div>
-                    <p className="mb-4 font-medium text-gray-700">Type your business name as it appears on LinkedIn</p>
-                    <div className="mb-6 flex">
-                      <div className="relative flex-1">
-                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                          <Search className="h-4 w-4 text-gray-400" />
-                        </div>
+                    {/* Back Button */}
+                    <button
+                      onClick={handleBackToSources}
+                      className="mb-4 flex items-center text-[#7c5cff] hover:underline"
+                    >
+                      <ArrowLeft className="mr-1 h-4 w-4" />
+                      <span>Choose a different source</span>
+                    </button>
+
+                    <h2 className="mb-6 text-2xl font-bold text-gray-800">Add a Text Testimonial</h2>
+
+                    <form onSubmit={handleSubmitTextTestimonial} className="space-y-6">
+                      <div>
+                        <label htmlFor="customerName" className="mb-1 block text-sm font-medium text-gray-700">
+                          Customer Name*
+                        </label>
                         <input
                           type="text"
-                          placeholder="Enter Your Business Name"
-                          className="w-full rounded-l-md border border-gray-200 py-2 pl-10 pr-4 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
+                          id="customerName"
+                          name="customerName"
+                          value={textTestimonial.customerName}
+                          onChange={handleTextTestimonialChange}
+                          className={`w-full rounded-md border ${
+                            formErrors.customerName ? "border-red-300" : "border-gray-300"
+                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                          placeholder="John Smith"
                         />
+                        {formErrors.customerName && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.customerName}</p>
+                        )}
                       </div>
-                      <button className="rounded-r-md bg-gray-100 px-6 py-2 font-medium text-gray-700 hover:bg-gray-200">
-                        Search
-                      </button>
-                    </div>
 
-                    {/* Help text */}
-                    <div className="mb-6 flex items-start rounded-md bg-blue-50 p-4 text-sm text-blue-700">
-                      <Info className="mr-2 h-5 w-5 flex-shrink-0" />
                       <div>
-                        Need help importing your Google reviews?{" "}
-                        <a href="#" className="font-medium underline">
-                          Here&apos;s a guide.
-                        </a>
+                        <label htmlFor="customerCompany" className="mb-1 block text-sm font-medium text-gray-700">
+                          Company/Organization*
+                        </label>
+                        <input
+                          type="text"
+                          id="customerCompany"
+                          name="customerCompany"
+                          value={textTestimonial.customerCompany}
+                          onChange={handleTextTestimonialChange}
+                          className={`w-full rounded-md border ${
+                            formErrors.customerCompany ? "border-red-300" : "border-gray-300"
+                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                          placeholder="Acme Inc."
+                        />
+                        {formErrors.customerCompany && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.customerCompany}</p>
+                        )}
                       </div>
-                    </div>
 
-                    {/* Sync status */}
-                    <div className="rounded-md border border-gray-200 p-4">
-                      <div className="mb-2 flex items-center">
-                        <div className="mr-3 flex h-6 w-6 items-center justify-center rounded-full bg-[#a5b4fc] text-white">
-                          <span className="text-xs">?</span>
-                        </div>
-                        <h3 className="font-medium text-gray-800">Automatically Synced</h3>
+                      <div>
+                        <label htmlFor="testimonialText" className="mb-1 block text-sm font-medium text-gray-700">
+                          Testimonial Text*
+                        </label>
+                        <textarea
+                          id="testimonialText"
+                          name="testimonialText"
+                          value={textTestimonial.testimonialText}
+                          onChange={handleTextTestimonialChange}
+                          rows={4}
+                          className={`w-full rounded-md border ${
+                            formErrors.testimonialText ? "border-red-300" : "border-gray-300"
+                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                          placeholder="Enter the testimonial text here..."
+                        ></textarea>
+                        {formErrors.testimonialText && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.testimonialText}</p>
+                        )}
                       </div>
-                      <p className="text-sm text-gray-600">
-                        No auto-sync tasks are currently active for this review source.
-                      </p>
-                    </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">Rating</label>
+                        {renderStarRating()}
+                      </div>
+
+                      {formErrors.submit && (
+                        <div className="rounded-md bg-red-50 p-4">
+                          <div className="flex">
+                            <AlertCircle className="h-5 w-5 text-red-400" />
+                            <p className="ml-3 text-sm text-red-700">{formErrors.submit}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={handleCloseModal}
+                          className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="flex items-center rounded-md bg-[#7c5cff] px-4 py-2 text-sm font-medium text-white hover:bg-[#6a4ddb] disabled:opacity-70"
+                        >
+                          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          {isSubmitting ? "Saving..." : "Save Testimonial"}
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                </div>
+                )
               ) : (
                 /* Source selection view */
                 <div>
-                  <h2 className="mb-6 text-2xl font-bold text-gray-800">Let&apos;s some import testimonials 👋</h2>
+                  <h2 className="mb-6 text-2xl font-bold text-gray-800">Let&apos;s import some testimonials 👋</h2>
 
                   {/* Pro Banner */}
                   <div className="mb-6 rounded-lg bg-[#a5b4fc] p-4 text-white">
@@ -525,7 +758,9 @@ export default function TestimonialsPage() {
                     {importSources.map((source) => (
                       <button
                         key={source.id}
-                        className="flex items-center justify-between rounded-md border border-gray-200 p-4 hover:border-[#a5b4fc] hover:bg-[#f8f7ff]"
+                        className={`flex items-center justify-between rounded-md border ${
+                          source.isReady ? "border-gray-200" : "border-gray-200 opacity-70"
+                        } p-4 hover:border-[#a5b4fc] hover:bg-[#f8f7ff]`}
                         onClick={() => handleSourceSelect(source.id)}
                       >
                         <div className="flex items-center">
@@ -570,7 +805,13 @@ export default function TestimonialsPage() {
                           </div>
                           <span className="font-medium">{source.name}</span>
                         </div>
-                        <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-600">Auto</span>
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs ${
+                            source.isReady ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          {source.isReady ? "READY" : "COMING SOON"}
+                        </span>
                       </button>
                     ))}
                   </div>

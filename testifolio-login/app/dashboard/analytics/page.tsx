@@ -1,466 +1,468 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowUp, Eye, FileText, Check, Clock, Send } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import Image from "next/image"
+import Link from "next/link"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import { ArrowDown, ArrowUp, Calendar, Home, Star } from "lucide-react"
+
 import DashboardLayout from "@/components/dashboard/dashboard-layout"
+import { useTestimonials } from "@/hooks/use-testimonials"
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState("7")
-  const [activityFilter, setActivityFilter] = useState("all")
+  const [timeRange, setTimeRange] = useState("Last 7 days")
+  const { testimonials, isLoading, error } = useTestimonials()
+
+  // Format date to a readable string (e.g., "May 15, 2025")
+  const formatDateString = (dateInput: string | Date) => {
+    const date = typeof dateInput === "string" ? new Date(dateInput) : dateInput
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  // Calculate analytics from real testimonial data
+  const calculateAnalytics = () => {
+    if (!testimonials || testimonials.length === 0) {
+      return {
+        totalTestimonials: 0,
+        averageRating: 0,
+        bySource: [],
+        byRating: [],
+        submissionTrend: [],
+        recentActivity: [],
+      }
+    }
+
+    // Calculate total testimonials
+    const totalTestimonials = testimonials.length
+
+    // Calculate average rating
+    const totalRating = testimonials.reduce((sum, t) => sum + (t.rating || 0), 0)
+    const averageRating = totalRating / totalTestimonials
+
+    // Calculate testimonials by source
+    const sourceMap = new Map()
+    testimonials.forEach((t) => {
+      const source = (t.platform || t.source || "other").toLowerCase()
+      sourceMap.set(source, (sourceMap.get(source) || 0) + 1)
+    })
+
+    const bySource = Array.from(sourceMap.entries()).map(([name, value]) => ({
+      name,
+      value,
+    }))
+
+    // Calculate testimonials by rating
+    const ratingMap = new Map()
+    testimonials.forEach((t) => {
+      const rating = t.rating || 0
+      ratingMap.set(rating, (ratingMap.get(rating) || 0) + 1)
+    })
+
+    const byRating = Array.from(ratingMap.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([name, value]) => ({
+        name,
+        value,
+      }))
+
+    // Format data for the submission trend chart
+    const submissionTrend = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date()
+      date.setDate(date.getDate() - (6 - i))
+
+      const dateString = date.toISOString().split("T")[0]
+      const count = testimonials.filter((t) => {
+        const testimonialDate = new Date(t.created_at || t.date || new Date())
+        return testimonialDate.toISOString().split("T")[0] === dateString
+      }).length
+
+      return {
+        date: formatDateString(date),
+        count,
+      }
+    })
+
+    // Format recent activity
+    const recentActivity = testimonials.slice(0, 5).map((t) => ({
+      id: t.id,
+      name: t.name || "Anonymous",
+      avatar: t.avatar || `/avatars/${Math.floor(Math.random() * 9) + 1}.png`,
+      action: "submitted a testimonial",
+      date: formatDateString(t.created_at || t.date || new Date()),
+      rating: t.rating || 0,
+      platform: (t.platform || t.source || "other").toLowerCase(),
+    }))
+
+    return {
+      totalTestimonials,
+      averageRating,
+      bySource,
+      byRating,
+      submissionTrend,
+      recentActivity,
+    }
+  }
+
+  const analytics = calculateAnalytics()
+
+  // Colors for the pie charts
+  const COLORS = ["#7c5cff", "#ff5c8d", "#5cffb1", "#ffb15c", "#5cb9ff", "#c45cff"]
+
+  // Platform icons
+  const getPlatformIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case "twitter":
+      case "x":
+        return (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black text-white">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </div>
+        )
+      case "google":
+        return (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-[#4285F4] shadow">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                fill="#4285F4"
+              />
+              <path
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                fill="#34A853"
+              />
+              <path
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                fill="#FBBC05"
+              />
+              <path
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                fill="#EA4335"
+              />
+            </svg>
+          </div>
+        )
+      case "facebook":
+        return (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+          </div>
+        )
+      case "linkedin":
+        return (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+            </svg>
+          </div>
+        )
+      case "instagram":
+        return (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 text-white">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+            </svg>
+          </div>
+        )
+      case "yelp":
+        return (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.16 12.594l-4.995 1.433c-.96.276-1.94-.8-1.665-1.766l2.37-8.224c.276-.96 1.5-1.2 2.1-.346l3.534 5.07c.738 1.06-.385 3.557-1.344 3.833zm.835 2.66l-3.534 5.07c-.6.866-1.825.618-2.1-.346l-2.37-8.224c-.276-.96.703-2.04 1.666-1.766l4.994 1.434c.96.276 2.082 2.776 1.344 3.833zm-7.964 4.144l-6.655 4.83c-.832.603-1.857-.198-1.635-1.21l2.42-11.3c.22-1.01 1.542-1.352 2.173-.56l4.17 5.21c.714.892.36 2.43-.473 3.03zm-6.983-19.11l6.655 4.83c.832.603 1.186 2.14.474 3.03l-4.17 5.21c-.63.79-1.952.45-2.174-.56l-2.42-11.3c-.22-1.01.804-1.813 1.636-1.21zM12 12.04c.767 0 1.387.62 1.387 1.387 0 .767-.62 1.387-1.387 1.387-.767 0-1.387-.62-1.387-1.387 0-.767.62-1.387 1.387-1.387z" />
+            </svg>
+          </div>
+        )
+      case "pinterest":
+        return (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z" />
+            </svg>
+          </div>
+        )
+      default:
+        return (
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-400 text-white">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+        )
+    }
+  }
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">Analytics</h1>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div className="p-6">
+        {/* Breadcrumb */}
+        <div className="mb-4 flex items-center text-sm">
+          <Link href="/dashboard" className="flex items-center text-[#7c5cff]">
+            <Home className="mr-1 h-4 w-4" />
+            <span>Dashboard</span>
+          </Link>
+          <span className="mx-2 text-gray-400">/</span>
+          <span className="text-gray-600">Analytics</span>
+        </div>
+
+        {/* Page Header */}
+        <div className="mb-6 flex flex-col items-center justify-center text-center">
+          <div className="mb-2 inline-block rounded-full bg-[#f0eaff] px-4 py-1 text-sm text-[#7c5cff]">Insights</div>
+          <h1 className="mb-2 text-4xl font-bold text-[#7c5cff]">Testimonial Analytics</h1>
+          <p className="mb-6 text-gray-600">Track and analyze your testimonial performance</p>
+        </div>
+
+        {/* Time Range Selector */}
+        <div className="mb-6 flex justify-end">
+          <div className="relative inline-block">
+            <div className="flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm">
+              <Calendar className="mr-2 h-4 w-4 text-gray-500" />
+              <span>{timeRange}</span>
+              <svg className="ml-2 h-4 w-4 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
                 <path
-                  d="M6.66669 13.3333L10 8.00001L6.66669 2.66667"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                  fillRule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clipRule="evenodd"
                 />
               </svg>
-              <span>/ Dashboard / Analytics</span>
-            </span>
+            </div>
           </div>
         </div>
 
-        {/* Metrics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <MetricCard
-            title="Total Testimonials"
-            value="1,482"
-            change={18.34}
-            icon={<FileText className="h-5 w-5 text-[#4a3aff]" />}
-          />
-          <MetricCard
-            title="Pending Testimonials"
-            value="1,482"
-            change={3.2}
-            icon={<Clock className="h-5 w-5 text-[#f59e0b]" />}
-          />
-          <MetricCard
-            title="Completed Testimonials"
-            value="296"
-            change={15.3}
-            icon={<Check className="h-5 w-5 text-[#34c759]" />}
-          />
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-medium">Form Insights</CardTitle>
-              <div className="flex items-center gap-4 text-sm mt-2">
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-[#f6220e]"></span>
-                  <span>Views</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-[#4a3aff]"></span>
-                  <span>Submissions</span>
-                </div>
+        {/* Stats Cards */}
+        <div className="mb-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {/* Total Testimonials */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Total Testimonials</p>
+                <h3 className="text-3xl font-bold text-gray-900">{analytics.totalTestimonials}</h3>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[200px] w-full">
-                <FormInsightsChart />
-              </div>
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-500">Most Effective Form</div>
-                <div className="text-lg font-medium mt-1">Product Review</div>
-                <div className="text-sm mt-1">85% Conversion Rate</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg font-medium">Customer Ratings</CardTitle>
-                <div className="flex items-center text-sm text-green-500">
-                  <ArrowUp className="h-4 w-4 mr-1" />
-                  <span>12% vs last month</span>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">4.0</div>
-                <div className="flex">
-                  {[1, 2, 3, 4].map((star) => (
-                    <svg key={star} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                  <svg className="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="h-[280px] ml-[20%] mt-4">
-                <RatingsChart />
-              </div>
-              <div className="flex justify-between mt-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-[#4a3aff]"></span>
-                  <span>5 star</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-[#34c759]"></span>
-                  <span>4 star</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-[#f59e0b]"></span>
-                  <span>3 star</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-[#ffcc00]"></span>
-                  <span>2 star</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-3 h-3 rounded-full bg-[#f6220e]"></span>
-                  <span>1 star</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg font-medium">Recent Activity</CardTitle>
-              <div className="flex gap-2">
-                <Select value={timeRange} onValueChange={setTimeRange}>
-                  <SelectTrigger className="w-[140px] h-8 text-sm">
-                    <SelectValue placeholder="Last 7 days" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7">Last 7 days</SelectItem>
-                    <SelectItem value="30">Last 30 days</SelectItem>
-                    <SelectItem value="90">Last 90 days</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={activityFilter} onValueChange={setActivityFilter}>
-                  <SelectTrigger className="w-[100px] h-8 text-sm">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="published">Published</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="rounded-full bg-[#f0eaff] p-3 text-[#7c5cff]">
+                <svg
+                  className="h-6 w-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Customer Name</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Form Type</TableHead>
-                  <TableHead>Ratings</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Jhon Anderson</TableCell>
-                  <TableCell>Feb 02, 2025</TableCell>
-                  <TableCell>Product Review</TableCell>
-                  <TableCell>
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg key={star} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                      <Check className="w-3 h-3 mr-1" /> Approved
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Sara Miller</TableCell>
-                  <TableCell>Jan 02, 2025</TableCell>
-                  <TableCell>Service Feedback</TableCell>
-                  <TableCell>
-                    <div className="flex">
-                      {[1, 2, 3, 4].map((star) => (
-                        <svg key={star} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                      <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
-                      <Clock className="w-3 h-3 mr-1" /> Pending
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>David Wilson</TableCell>
-                  <TableCell>March 02, 2025</TableCell>
-                  <TableCell>Customer Feedback</TableCell>
-                  <TableCell>
-                    <div className="flex">
-                      {[1, 2, 3].map((star) => (
-                        <svg key={star} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                      {[1, 2].map((star) => (
-                        <svg key={star} className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
-                      <Send className="w-3 h-3 mr-1" /> Published
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Emma Davis</TableCell>
-                  <TableCell>Feb 02, 2025</TableCell>
-                  <TableCell>Product Review</TableCell>
-                  <TableCell>
-                    <div className="flex">
-                      {[1, 2, 3, 4].map((star) => (
-                        <svg key={star} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                      <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                      <Check className="w-3 h-3 mr-1" /> Approved
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="h-8 w-8">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+            <div className="mt-4 flex items-center text-sm">
+              <span className="flex items-center text-green-500">
+                <ArrowUp className="mr-1 h-4 w-4" />
+                12%
+              </span>
+              <span className="ml-2 text-gray-500">vs. last period</span>
+            </div>
+          </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-sm text-gray-500">New Testimonials This Week</div>
-                <div className="flex items-center text-green-500 text-sm">
-                  <ArrowUp className="h-3 w-3 mr-1" />
-                  <span>12% Increase</span>
-                </div>
+          {/* Average Rating */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Average Rating</p>
+                <h3 className="text-3xl font-bold text-gray-900">{analytics.averageRating.toFixed(1)}</h3>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">127</div>
-                <div className="w-24 h-12">
-                  <MiniChart color="#34c759" />
-                </div>
+              <div className="rounded-full bg-[#fff0ea] p-3 text-[#ff7c5c]">
+                <Star className="h-6 w-6" />
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-sm text-gray-500">Growth Rate</div>
-                <div className="flex items-center text-green-500 text-sm">
-                  <ArrowUp className="h-3 w-3 mr-1" />
-                  <span>3.2% vs previous period</span>
-                </div>
+            </div>
+            <div className="mt-4 flex items-center text-sm">
+              <span className="flex items-center text-green-500">
+                <ArrowUp className="mr-1 h-4 w-4" />
+                3%
+              </span>
+              <span className="ml-2 text-gray-500">vs. last period</span>
+            </div>
+          </div>
+
+          {/* Conversion Rate */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Conversion Rate</p>
+                <h3 className="text-3xl font-bold text-gray-900">24%</h3>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="text-3xl font-bold">15.4%</div>
-                <div className="w-24 h-12">
-                  <MiniChart color="#4a3aff" />
-                </div>
+              <div className="rounded-full bg-[#eafff0] p-3 text-[#5cff7c]">
+                <svg
+                  className="h-6 w-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                  <polyline points="16 7 22 7 22 13" />
+                </svg>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="mt-4 flex items-center text-sm">
+              <span className="flex items-center text-red-500">
+                <ArrowDown className="mr-1 h-4 w-4" />
+                2%
+              </span>
+              <span className="ml-2 text-gray-500">vs. last period</span>
+            </div>
+          </div>
+
+          {/* Form Views */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Form Views</p>
+                <h3 className="text-3xl font-bold text-gray-900">1,248</h3>
+              </div>
+              <div className="rounded-full bg-[#eaf0ff] p-3 text-[#5c7cff]">
+                <svg
+                  className="h-6 w-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center text-sm">
+              <span className="flex items-center text-green-500">
+                <ArrowUp className="mr-1 h-4 w-4" />
+                18%
+              </span>
+              <span className="ml-2 text-gray-500">vs. last period</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts */}
+        <div className="mb-6 grid gap-6 lg:grid-cols-2">
+          {/* Testimonial Submission Trend */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-gray-900">Testimonial Submission Trend</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analytics.submissionTrend} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#7c5cff" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Testimonials by Source */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-gray-900">Testimonials by Source</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={analytics.bySource}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {analytics.bySource.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Testimonials by Rating */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-gray-900">Testimonials by Rating</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analytics.byRating} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#ff7c5c" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-medium text-gray-900">Recent Activity</h3>
+            <div className="space-y-4">
+              {analytics.recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-start">
+                  <div className="relative mr-3 h-10 w-10 flex-shrink-0 overflow-hidden rounded-full">
+                    <Image
+                      src={activity.avatar || "/placeholder.svg"}
+                      alt={activity.name}
+                      width={40}
+                      height={40}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-gray-900">{activity.name}</p>
+                      <div className="flex items-center">{getPlatformIcon(activity.platform)}</div>
+                    </div>
+                    <p className="text-sm text-gray-600">{activity.action}</p>
+                    <div className="mt-1 flex items-center">
+                      <div className="flex">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`h-3 w-3 ${
+                              i < activity.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="ml-2 text-xs text-gray-500">{activity.date}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </DashboardLayout>
-  )
-}
-
-function MetricCard({ title, value, change, icon }) {
-  return (
-    <Card className="bg-[#4a3aff]/10">
-      <CardContent className="p-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="text-sm text-gray-500">{title}</div>
-            <div className="text-3xl font-bold mt-2">{value}</div>
-          </div>
-          <div className="p-2 rounded-full bg-white">{icon}</div>
-        </div>
-        <div className="mt-4 flex items-center text-sm">
-          <div className="flex items-center text-green-500">
-            <ArrowUp className="h-3 w-3 mr-1" />
-            <span>{change}%</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function FormInsightsChart() {
-  return (
-    <svg viewBox="0 0 500 200" className="w-full h-full">
-      {/* Grid lines */}
-      <line x1="0" y1="0" x2="500" y2="0" stroke="#f1f1f1" />
-      <line x1="0" y1="50" x2="500" y2="50" stroke="#f1f1f1" />
-      <line x1="0" y1="100" x2="500" y2="100" stroke="#f1f1f1" />
-      <line x1="0" y1="150" x2="500" y2="150" stroke="#f1f1f1" />
-      <line x1="0" y1="200" x2="500" y2="200" stroke="#f1f1f1" />
-
-      {/* Views line (red) */}
-      <path
-        d="M0,100 C50,80 100,120 150,60 C200,20 250,40 300,20 C350,40 400,80 450,100"
-        fill="none"
-        stroke="#f6220e"
-        strokeWidth="3"
-      />
-
-      {/* Submissions line (blue) */}
-      <path
-        d="M0,120 C50,80 100,60 150,100 C200,120 250,100 300,80 C350,100 400,120 450,140"
-        fill="none"
-        stroke="#4a3aff"
-        strokeWidth="3"
-      />
-
-      {/* X-axis labels */}
-      <text x="0" y="220" fontSize="12" fill="#6c757d">
-        Jan
-      </text>
-      <text x="83" y="220" fontSize="12" fill="#6c757d">
-        Feb
-      </text>
-      <text x="166" y="220" fontSize="12" fill="#6c757d">
-        Mar
-      </text>
-      <text x="249" y="220" fontSize="12" fill="#6c757d">
-        Apr
-      </text>
-      <text x="332" y="220" fontSize="12" fill="#6c757d">
-        May
-      </text>
-      <text x="415" y="220" fontSize="12" fill="#6c757d">
-        Jun
-      </text>
-    </svg>
-  )
-}
-
-function RatingsChart() {
-  return (
-    <div>
-      <svg width="274" height="274" viewBox="0 0 274 274" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M257.073 136.782C258.852 136.782 260.611 137.156 262.236 137.88C263.861 138.604 265.315 139.661 266.505 140.984C267.695 142.306 268.593 143.864 269.142 145.556C269.691 147.248 269.877 149.036 269.69 150.805C267.568 170.858 260.92 190.167 250.25 207.278C239.579 224.388 225.163 238.853 208.089 249.581C191.015 260.309 171.728 267.022 151.682 269.212C131.636 271.402 111.355 269.013 92.3669 262.225C90.6919 261.626 89.1616 260.682 87.8752 259.453C86.5888 258.225 85.5751 256.739 84.8999 255.094C84.2248 253.448 83.9032 251.679 83.956 249.901C84.0089 248.123 84.4351 246.376 85.2069 244.773L117.031 178.689C118.239 176.181 120.238 174.14 122.719 172.881C125.201 171.621 128.028 171.212 130.765 171.717C139.524 173.334 148.571 171.601 156.113 166.862C163.655 162.123 169.141 154.724 171.485 146.131C172.218 143.446 173.813 141.076 176.024 139.387C178.236 137.697 180.942 136.782 183.725 136.782H257.073Z" fill="#F9994B" stroke="white" stroke-width="7.61244" stroke-linejoin="round" />
-        <path d="M85.2121 244.773C84.4403 246.376 83.3402 247.798 81.983 248.948C80.6259 250.098 79.0422 250.949 77.3346 251.448C75.627 251.946 73.8337 252.079 72.0711 251.84C70.3086 251.6 68.6161 250.992 67.1036 250.056C42.7635 234.99 23.9237 212.485 13.3751 185.873C2.82642 159.262 1.13007 129.961 8.53729 102.31C8.99757 100.592 9.81399 98.99 10.9336 97.6078C12.0532 96.2255 13.4509 95.0942 15.0361 94.2871C16.6212 93.48 18.3584 93.0153 20.1348 92.9231C21.9112 92.8308 23.6871 93.1132 25.3473 93.7518L93.8057 120.084C96.4033 121.083 98.6003 122.909 100.058 125.279C101.516 127.65 102.154 130.435 101.874 133.204C101.3 138.866 102.096 144.583 104.193 149.873C106.29 155.164 109.628 159.873 113.925 163.604C116.026 165.429 117.469 167.895 118.031 170.62C118.594 173.346 118.244 176.181 117.037 178.689L85.2121 244.773Z" fill="#04CE00" stroke="white" stroke-width="7.61244" stroke-linejoin="round" />
-        <path d="M25.3454 93.752C23.6852 93.1134 22.1778 92.1328 20.9211 90.8739C19.6644 89.615 18.6864 88.106 18.0507 86.4447C17.415 84.7834 17.1357 83.0069 17.231 81.2307C17.3263 79.4545 17.794 77.7181 18.6038 76.1344C28.4803 56.8185 42.9247 40.2069 60.6816 27.7433C78.4385 15.2798 98.9706 7.34146 120.493 4.61824C122.258 4.39495 124.05 4.54524 125.753 5.05935C127.456 5.57345 129.032 6.43989 130.378 7.60242C131.724 8.76495 132.811 10.1976 133.568 11.8074C134.325 13.4171 134.735 15.168 134.771 16.9465L136.267 90.2792C136.324 93.0617 135.464 95.7858 133.82 98.0316C132.176 100.277 129.84 101.92 127.17 102.707C119.714 104.906 113.185 109.488 108.584 115.753C106.937 117.996 104.597 119.635 101.926 120.418C99.2554 121.201 96.4013 121.083 93.8037 120.084L25.3454 93.752Z" fill="#3A4EFF" stroke="white" stroke-width="7.61244" stroke-linejoin="round" />
-        <path d="M134.772 16.9462C134.736 15.1678 135.074 13.4016 135.764 11.7623C136.455 10.123 137.482 8.64721 138.78 7.43074C140.078 6.21426 141.617 5.28427 143.298 4.70114C144.978 4.118 146.762 3.89475 148.535 4.04587C182.952 6.98044 214.884 23.1685 237.594 49.1953C238.764 50.5356 239.638 52.1068 240.161 53.807C240.684 55.5072 240.844 57.2983 240.629 59.0641C240.415 60.83 239.832 62.5311 238.918 64.057C238.004 65.5829 236.779 66.8996 235.323 67.9215L175.288 110.06C173.01 111.659 170.269 112.465 167.488 112.353C164.708 112.241 162.041 111.217 159.899 109.44C155.811 106.05 151.016 103.619 145.865 102.326C143.165 101.648 140.764 100.102 139.029 97.9251C137.295 95.7482 136.325 93.0615 136.268 90.2789L134.772 16.9462Z" fill="#FFBD72" stroke="white" stroke-width="7.61244" stroke-linejoin="round" />
-        <path d="M235.322 67.9216C236.778 66.8996 238.432 66.1953 240.178 65.8542C241.924 65.5131 243.722 65.543 245.455 65.9418C247.189 66.3406 248.819 67.0995 250.24 68.1692C251.661 69.2389 252.842 70.5955 253.705 72.1509C262.375 87.7772 267.812 104.988 269.693 122.759C269.88 124.528 269.694 126.317 269.145 128.009C268.596 129.701 267.698 131.258 266.508 132.581C265.318 133.903 263.864 134.96 262.239 135.684C260.614 136.408 258.855 136.782 257.076 136.782H183.728C180.945 136.782 178.239 135.867 176.027 134.178C173.815 132.488 172.22 130.119 171.488 127.433C171.241 126.526 170.957 125.629 170.638 124.744C169.695 122.126 169.639 119.27 170.479 116.616C171.319 113.963 173.008 111.659 175.286 110.06L235.322 67.9216Z" fill="#FF2D55" stroke="white" stroke-width="7.61244" stroke-linejoin="round" />
-      </svg>
-    </div>
-  )
-}
-
-function MiniChart({ color }) {
-  return (
-    <svg viewBox="0 0 100 50" className="w-full h-full">
-      <path d="M0,40 C10,35 20,38 30,30 C40,22 50,25 60,20 C70,15 80,10 90,5 L90,50 L0,50 Z" fill={`${color}10`} />
-      <path
-        d="M0,40 C10,35 20,38 30,30 C40,22 50,25 60,20 C70,15 80,10 90,5"
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-      />
-    </svg>
   )
 }

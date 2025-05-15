@@ -3,10 +3,11 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Menu, X } from "lucide-react"
-import Image from "next/image"
+import { useAuth } from "@/contexts/auth-context"
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { user, signOut } = useAuth()
 
   return (
     <header className="border-b border-gray-200 bg-white">
@@ -14,16 +15,10 @@ export function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center">
           <div className="flex items-center">
-            <div>
-            <Image
-                    src="/logosbg.svg"
-                    alt="Testimonials illustration"
-                    width={600}
-                    height={600}
-                    className="h-auto w-full"
-                    priority
-                  />
+            <div className="mr-1 h-6 w-6 rounded-full bg-[#7c5cff] text-white">
+              <span className="flex h-full w-full items-center justify-center text-xs font-bold">T</span>
             </div>
+            <span className="text-2xl font-bold text-[#7c5cff]">testifolio</span>
           </div>
         </Link>
 
@@ -55,24 +50,37 @@ export function Navbar() {
 
         {/* Desktop CTA Buttons */}
         <div className="hidden items-center space-x-4 md:flex">
-        <Link
-            href="/dashboard"
-            className="rounded-full bg-[#2d3748] px-8 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1a202c]"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-full bg-[#2d3748] px-8 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1a202c]"
-          >
-            Login
-          </Link>
-          <Link
-            href="/signup"
-            className="rounded-full bg-[#7c5cff] px-8 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6a4ddb]"
-          >
-            Sign up
-          </Link>
+          {user ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="rounded-full bg-[#7c5cff] px-8 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6a4ddb]"
+              >
+                Dashboard
+              </Link>
+              {/* <button
+                onClick={() => signOut()}
+                className="rounded-full bg-[#2d3748] px-8 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1a202c]"
+              >
+                Sign out
+              </button> */}
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="rounded-full bg-[#2d3748] px-8 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1a202c]"
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-full bg-[#7c5cff] px-8 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#6a4ddb]"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -102,18 +110,37 @@ export function Navbar() {
                 Resources
               </Link>
               <div className="flex flex-col space-y-3 pt-4">
-                <Link
-                  href="/login"
-                  className="rounded-full bg-[#2d3748] px-8 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-[#1a202c]"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  className="rounded-full bg-[#7c5cff] px-8 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-[#6a4ddb]"
-                >
-                  Sign up
-                </Link>
+                {user ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="rounded-full bg-[#7c5cff] px-8 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-[#6a4ddb]"
+                    >
+                      Dashboard
+                    </Link>
+                    <button
+                      onClick={() => signOut()}
+                      className="rounded-full bg-[#2d3748] px-8 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-[#1a202c]"
+                    >
+                      Sign out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="rounded-full bg-[#2d3748] px-8 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-[#1a202c]"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/signup"
+                      className="rounded-full bg-[#7c5cff] px-8 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-[#6a4ddb]"
+                    >
+                      Sign up
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>

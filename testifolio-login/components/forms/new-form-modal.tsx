@@ -4,7 +4,11 @@ import type React from "react"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { X } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { Loader2, X } from "lucide-react"
+
+import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase"
 
 interface NewFormModalProps {
   isOpen: boolean
@@ -12,15 +16,60 @@ interface NewFormModalProps {
 }
 
 export function NewFormModal({ isOpen, onClose }: NewFormModalProps) {
+  const { user } = useAuth()
   const [formName, setFormName] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (formName.trim()) {
-      // In a real app, we would create the form in the database here
-      const formId = Date.now().toString()
+
+    if (!formName.trim()) {
+      setError("Please enter a form name")
+      return
+    }
+
+    if (!user) {
+      setError("You must be logged in to create a form")
+      return
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Create the form in Supabase
+      const { data, error: insertError } = await supabase
+        .from("collection_forms")
+        .insert([
+          {
+            name: formName.trim(),
+            user_id: user.id,
+            // Default values are set in the database schema
+          },
+        ])
+        .select()
+
+      if (insertError) {
+        throw insertError
+      }
+
+      // Get the created form ID
+      const formId = data?.[0]?.id
+
+      if (!formId) {
+        throw new Error("Failed to create form")
+      }
+
+      // Redirect to the form editor
       router.push(`/dashboard/collection-forms/${formId}`)
+      onClose()
+    } catch (err) {
+      console.error("Error creating form:", err)
+      setError("Failed to create form. Please try again.")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -32,6 +81,7 @@ export function NewFormModal({ isOpen, onClose }: NewFormModalProps) {
         <button
           onClick={onClose}
           className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+          disabled={loading}
         >
           <X className="h-5 w-5" />
         </button>
@@ -55,14 +105,24 @@ export function NewFormModal({ isOpen, onClose }: NewFormModalProps) {
               className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
               placeholder="Enter form name"
               required
+              disabled={loading}
             />
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
           </div>
 
           <button
             type="submit"
-            className="w-full rounded-md bg-black px-4 py-3 text-center text-white hover:bg-gray-800"
+            className="w-full rounded-md bg-black px-4 py-3 text-center text-white hover:bg-gray-800 disabled:opacity-70"
+            disabled={loading}
           >
-            Create
+            {loading ? (
+              <span className="flex items-center justify-center">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </span>
+            ) : (
+              "Create"
+            )}
           </button>
         </form>
       </div>

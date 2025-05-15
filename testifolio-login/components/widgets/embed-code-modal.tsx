@@ -1,19 +1,34 @@
 "use client"
 
 import { useState } from "react"
-import { X } from "lucide-react"
+import { X, Copy, Check } from "lucide-react"
 
 interface EmbedCodeModalProps {
   isOpen: boolean
   onClose: () => void
+  config?: {
+    layout?: string
+    theme?: string
+    primaryColor?: string
+    showRating?: boolean
+    showSource?: boolean
+    showAvatar?: boolean
+    maxItems?: number
+    sortBy?: string
+    minRating?: number
+    borderRadius?: number
+    padding?: number
+    font?: string
+  }
 }
 
-export function EmbedCodeModal({ isOpen, onClose }: EmbedCodeModalProps) {
+export function EmbedCodeModal({ isOpen, onClose, config = {} }: EmbedCodeModalProps) {
   const [copied, setCopied] = useState(false)
 
   if (!isOpen) return null
 
-  const embedCode = `<iframe src="https://yourwebsite.com/wall-of-love" width="100%" height="500px" frameborder="0"></iframe>`
+  // Default embed code without customization parameters
+  const embedCode = `<iframe src="${typeof window !== "undefined" ? window.location.origin : ""}/embed/testimonials" width="100%" height="500px" frameborder="0"></iframe>`
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(embedCode)
@@ -49,20 +64,17 @@ export function EmbedCodeModal({ isOpen, onClose }: EmbedCodeModalProps) {
             onClick={handleCopyCode}
             className="flex items-center gap-2 rounded-md bg-[#7c5cff] px-4 py-2 text-sm font-medium text-white hover:bg-[#6a4ddb]"
           >
-            <svg
-              className="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-              <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-            </svg>
-            <span>{copied ? "Copied!" : "Copy Code"}</span>
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-4 w-4" />
+                <span>Copy Code</span>
+              </>
+            )}
           </button>
         </div>
       </div>

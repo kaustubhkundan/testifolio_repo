@@ -1,47 +1,105 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Eye, FileText, Home, Pencil, Plus, Share2 } from "lucide-react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { Eye, FileText, Home, Loader2, Pencil, Plus, Share2 } from "lucide-react"
 
+import { useAuth } from "@/contexts/auth-context"
 import DashboardLayout from "@/components/dashboard/dashboard-layout"
 import { NewFormModal } from "@/components/forms/new-form-modal"
 import { ShareFormModal } from "@/components/forms/share-form-modal"
+import { supabase } from "@/lib/supabase"
+
+type Form = {
+  id: string
+  name: string
+  responses_count: number
+  created_at: string
+  is_active: boolean
+  collection_type?: string
+}
 
 export default function CollectionFormsPage() {
+  const { user } = useAuth()
+  const [forms, setForms] = useState<Form[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showNewFormModal, setShowNewFormModal] = useState(false)
   const [showImportedCollection, setShowImportedCollection] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const [selectedForm, setSelectedForm] = useState<{ id: string | number; name: string } | null>(null)
+  const [selectedForm, setSelectedForm] = useState<{ id: string; name: string } | null>(null)
 
-  const forms = [
-    {
-      id: 1,
-      name: "Yoga Coaching Sessions",
-      responses: 4,
-      createdOn: "Mar 8, 2025",
-      isActive: true,
-    },
-    {
-      id: 2,
-      name: "Video Testimonials",
-      responses: "2.5k",
-      createdOn: "",
-      type: "Video Testimonials",
-    },
-    {
-      id: 3,
-      name: "Audio Testimonials",
-      responses: "2.5k",
-      createdOn: "",
-      type: "Audio Testimonials",
-    },
-  ]
 
-  const handleShareClick = (form: { id: string | number; name: string }) => {
+  useEffect(() => {
+    async function fetchForms() {
+      if (!user) return
+
+      try {
+        setLoading(true)
+        setError(null)
+
+        const { data, error } = await supabase
+          .from("collection_forms")
+          .select("*")
+          .order("created_at", { ascending: false })
+
+        if (error) {
+          throw error
+        }
+
+        setForms(data || [])
+
+        // If we have forms, show the forms view
+        if (data && data.length > 0) {
+          setShowImportedCollection(true)
+        }
+      } catch (err) {
+        console.error("Error fetching forms:", err)
+        setError("Failed to load forms. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchForms()
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel("collection_forms_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "collection_forms",
+          filter: `user_id=eq.${user?.id}`,
+        },
+        (payload) => {
+          // Refresh the forms when there's a change
+          fetchForms()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, supabase])
+
+  const handleShareClick = (form: { id: string; name: string }) => {
     setSelectedForm(form)
     setShowShareModal(true)
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
   }
 
   return (
@@ -63,7 +121,43 @@ export default function CollectionFormsPage() {
           Easily collect AI-powered testimonials from your customers using a simple link.
         </p>
 
-        {showImportedCollection ? (
+        {loading ? (
+          // Loading state
+          <div className="flex h-64 items-center justify-center rounded-lg border border-gray-200 bg-white">
+            <div className="flex flex-col items-center">
+              <Loader2 className="mb-2 h-8 w-8 animate-spin text-[#7c5cff]" />
+              <p className="text-gray-600">Loading your forms...</p>
+            </div>
+          </div>
+        ) : error ? (
+          // Error state
+          <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-gray-200 bg-white">
+            <div className="mb-4 rounded-full bg-red-100 p-3 text-red-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <p className="mb-4 text-center text-gray-800">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-md bg-[#7c5cff] px-4 py-2 text-white hover:bg-[#6a4ddb]"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : showImportedCollection && forms.length > 0 ? (
+          // Forms list view
           <div className="rounded-lg border border-gray-200 bg-white p-6">
             <div className="mb-6 flex justify-between">
               <button
@@ -114,32 +208,40 @@ export default function CollectionFormsPage() {
                           </div>
                           <div>
                             <div className="font-medium text-gray-900">{form.name}</div>
-                            {form.isActive && (
+                            {form.is_active && (
                               <div className="flex items-center">
                                 <span className="mr-1.5 h-2 w-2 rounded-full bg-green-400"></span>
                                 <span className="text-xs text-gray-500">Active</span>
                               </div>
                             )}
-                            {form.type && <div className="text-xs text-gray-500">{form.type}</div>}
+                            {form.collection_type && (
+                              <div className="text-xs text-gray-500">{form.collection_type}</div>
+                            )}
                           </div>
                         </div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm text-gray-900">{form.responses}</div>
+                        <div className="text-sm text-gray-900">{form.responses_count}</div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
-                        <div className="text-sm text-gray-500">{form.createdOn}</div>
+                        <div className="text-sm text-gray-500">{formatDate(form.created_at)}</div>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4">
                         <div className="flex space-x-2">
-                          <button className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
+                          <Link
+                            href={`/dashboard/collection-forms/${form.id}`}
+                            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+                          >
                             <Eye className="h-5 w-5" />
-                          </button>
-                          <button className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500">
+                          </Link>
+                          <Link
+                            href={`/dashboard/collection-forms/${form.id}/edit`}
+                            className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+                          >
                             <Pencil className="h-5 w-5" />
-                          </button>
+                          </Link>
                           <button
-                            onClick={() => handleShareClick(form)}
+                            onClick={() => handleShareClick({ id: form.id, name: form.name })}
                             className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
                           >
                             <Share2 className="h-5 w-5" />
@@ -243,19 +345,21 @@ export default function CollectionFormsPage() {
                     <span>Create a New Form</span>
                   </button>
 
-                  <button
-                    onClick={() => setShowImportedCollection(true)}
-                    className="flex items-center justify-center gap-2 rounded-md border border-[#7c5cff] bg-white px-4 py-2 text-[#7c5cff] hover:bg-[#f8f7ff]"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span>View Imported Collection</span>
-                  </button>
+                  {forms.length > 0 && (
+                    <button
+                      onClick={() => setShowImportedCollection(true)}
+                      className="flex items-center justify-center gap-2 rounded-md border border-[#7c5cff] bg-white px-4 py-2 text-[#7c5cff] hover:bg-[#f8f7ff]"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span>View Your Forms</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
               <div className="flex-shrink-0">
                 <Image
-                  src="/write.svg"
+                  src="/hands-checklist.png"
                   alt="Collection form illustration"
                   width={300}
                   height={300}
@@ -273,7 +377,7 @@ export default function CollectionFormsPage() {
         <ShareFormModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
-          formId={selectedForm?.id.toString()}
+          formId={selectedForm?.id}
           formName={selectedForm?.name}
         />
       </div>
