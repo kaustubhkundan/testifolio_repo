@@ -358,7 +358,7 @@ export default function CollectionFormsPage() {
 
               <div className="flex-shrink-0">
                 <Image
-                  src="/hands-checklist.png"
+                  src="/hands-checklist.svg"
                   alt="Collection form illustration"
                   width={300}
                   height={300}
