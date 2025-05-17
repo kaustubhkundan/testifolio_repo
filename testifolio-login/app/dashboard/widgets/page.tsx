@@ -123,7 +123,7 @@ export default function WidgetsPage() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6">
         {/* Breadcrumb */}
         <div className="mb-4 flex items-center text-sm">
@@ -323,6 +323,6 @@ export default function WidgetsPage() {
 
       {/* Embed Code Modal */}
       <EmbedCodeModal isOpen={showEmbedModal} onClose={() => setShowEmbedModal(false)} config={widgetConfig} />
-    </DashboardLayout>
+    </>
   )
 }

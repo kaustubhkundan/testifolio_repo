@@ -103,7 +103,6 @@ export default function CollectionFormsPage() {
   }
 
   return (
-    <DashboardLayout>
       <div className="p-6">
         {/* Breadcrumb */}
         <div className="mb-4 flex items-center text-sm">
@@ -235,7 +234,7 @@ export default function CollectionFormsPage() {
                             <Eye className="h-5 w-5" />
                           </Link>
                           <Link
-                            href={`/dashboard/collection-forms/${form.id}/edit`}
+                            href={`/dashboard/collection-forms/${form.id}`}
                             className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
                           >
                             <Pencil className="h-5 w-5" />
@@ -381,6 +380,5 @@ export default function CollectionFormsPage() {
           formName={selectedForm?.name}
         />
       </div>
-    </DashboardLayout>
   )
 }

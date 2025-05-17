@@ -176,7 +176,6 @@ export default function EditFormPage() {
   ]
 
   return (
-    <DashboardLayout>
       <div className="p-6">
         {/* Back button and title */}
         <div className="mb-6 flex items-center justify-between">
@@ -305,6 +304,5 @@ export default function EditFormPage() {
           </div>
         ) : null}
       </div>
-    </DashboardLayout>
   )
 }

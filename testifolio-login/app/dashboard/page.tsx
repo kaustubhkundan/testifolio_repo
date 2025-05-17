@@ -188,7 +188,7 @@ export default function DashboardPage() {
   }, [user, isStatsLoading, isTestimonialsLoading, router])
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6">
         <div className="mb-6">
           <h2 className="text-xl font-medium text-gray-800">
@@ -477,6 +477,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   )
 }

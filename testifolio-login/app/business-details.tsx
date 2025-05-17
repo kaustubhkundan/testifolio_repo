@@ -136,14 +136,14 @@ export default function BusinessDetailsPage() {
         <div className="relative flex h-full flex-col items-center justify-center p-8">
           <div className="max-w-md">
             <Image
-              src="/images/business-details-illustration.png"
+              src=""
               alt="Business Details Illustration"
               width={500}
               height={400}
               className="h-auto w-full"
             />
             <p className="mt-8 text-center text-xl font-medium text-[#16151a]">
-              Trusted by thousands of small businesses & creators.
+              Trusted by thousands of small businesses & creators
             </p>
           </div>
         </div>

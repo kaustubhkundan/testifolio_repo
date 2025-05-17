@@ -29,7 +29,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function DashboardLayoutViews({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -93,9 +93,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Mobile menu */}
       <div className="lg:hidden">
         <div
-          className={`flex items-center justify-between border-b ${
-            isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
-          } px-4 py-3`}
+          className={`flex items-center justify-between border-b ${isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
+            } px-4 py-3`}
         >
           <div className={`flex h-12 border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"} px-4`}>
             <Link href="/dashboard" className="relative w-[100%] h-full">
@@ -120,7 +119,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className={`border-b ${isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"}`}>
             <div className="space-y-1 px-2 py-3">
               {navigation.map((item) => {
-                const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`)
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" && pathname?.startsWith(`${item.href}/`));
+
                 return (
                   <Link
                     key={item.name}
@@ -150,9 +152,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
         <div
-          className={`flex min-h-0 flex-1 flex-col border-r ${
-            isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
-          }`}
+          className={`flex min-h-0 flex-1 flex-col border-r ${isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
+            }`}
         >
           <div className={`flex h-16 border-b ${isDarkMode ? "border-gray-700" : "border-gray-200"} px-4`}>
             <Link href="/dashboard" className="relative w-[100%] h-full">
@@ -205,9 +206,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 className={`flex h-6 w-12 items-center rounded-full p-1 ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}
               >
                 <div
-                  className={`flex h-4 w-4 items-center justify-center rounded-full transition-all ${
-                    isDarkMode ? "ml-6 bg-[#7c5cff]" : "bg-white"
-                  }`}
+                  className={`flex h-4 w-4 items-center justify-center rounded-full transition-all ${isDarkMode ? "ml-6 bg-[#7c5cff]" : "bg-white"
+                    }`}
                 >
                   {isDarkMode ? <Moon className="h-3 w-3 text-white" /> : <Sun className="h-3 w-3 text-gray-600" />}
                 </div>
@@ -221,24 +221,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="lg:pl-64">
         {/* Top navigation */}
         <div
-          className={`sticky top-0 z-10 flex h-16 flex-shrink-0 border-b ${
-            isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
-          }`}
+          className={`sticky top-0 z-10 flex h-16 flex-shrink-0 border-b ${isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
+            }`}
         >
           <div className="flex flex-1 justify-between px-4">
             <div className="flex flex-1"></div>
             <div className="ml-4 flex items-center md:ml-6">
               {/* Notification bell */}
-           
+
 
               {/* Profile dropdown */}
               <div className="relative ml-3">
                 <div>
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className={`flex max-w-xs items-center rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#7c5cff] focus:ring-offset-2 ${
-                      isDarkMode ? "bg-[#1a1a1a]" : "bg-white"
-                    }`}
+                    className={`flex max-w-xs items-center rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#7c5cff] focus:ring-offset-2 ${isDarkMode ? "bg-[#1a1a1a]" : "bg-white"
+                      }`}
                     id="user-menu-button"
                     aria-expanded={isUserMenuOpen}
                     aria-haspopup="true"
@@ -260,9 +258,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </div>
                     )}
                     <span
-                      className={`ml-2 hidden text-sm font-medium md:block ${
-                        isDarkMode ? "text-white" : "text-gray-700"
-                      }`}
+                      className={`ml-2 hidden text-sm font-medium md:block ${isDarkMode ? "text-white" : "text-gray-700"
+                        }`}
                     >
                       {isLoading ? "Loading..." : userName}
                     </span>
@@ -272,45 +269,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                 {isUserMenuOpen && (
                   <div
-                    className={`absolute right-0 mt-2 w-48 origin-top-right rounded-md py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${
-                      isDarkMode ? "bg-gray-800" : "bg-white"
-                    }`}
+                    className={`absolute right-0 mt-2 w-48 origin-top-right rounded-md py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${isDarkMode ? "bg-gray-800" : "bg-white"
+                      }`}
                     role="menu"
                     aria-orientation="vertical"
                     aria-labelledby="user-menu-button"
                     tabIndex={-1}
                   >
+               
                     <Link
                       href="/dashboard/settings"
-                      className={`flex items-center px-4 py-2 text-sm ${
-                        isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                      role="menuitem"
-                      tabIndex={-1}
-                      id="user-menu-item-0"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <User className="mr-3 h-4 w-4" />
-                      Your Profile
-                    </Link>
-                    <Link
-                      href="/dashboard/settings"
-                      className={`flex items-center px-4 py-2 text-sm ${
-                        isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                      className={`flex items-center px-4 py-2 text-sm ${isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
+                        }`}
                       role="menuitem"
                       tabIndex={-1}
                       id="user-menu-item-1"
                       onClick={() => setIsUserMenuOpen(false)}
                     >
                       <Settings className="mr-3 h-4 w-4" />
-                      Settings
+                     Account Settings
                     </Link>
                     <div className={`my-1 h-px ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}></div>
                     <button
-                      className={`flex w-full items-center px-4 py-2 text-left text-sm ${
-                        isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                      className={`flex w-full items-center px-4 py-2 text-left text-sm ${isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
+                        }`}
                       role="menuitem"
                       tabIndex={-1}
                       id="user-menu-item-2"

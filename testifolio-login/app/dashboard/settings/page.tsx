@@ -16,7 +16,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("account")
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6">
         {/* Breadcrumb */}
         <div className="mb-6 flex items-center justify-between">
@@ -43,6 +43,6 @@ export default function SettingsPage() {
           {activeTab === "support" && <SupportSettings />}
         </div>
       </div>
-    </DashboardLayout>
+    </>
   )
 }

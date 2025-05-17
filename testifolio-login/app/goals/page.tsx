@@ -48,11 +48,10 @@ export default function GoalsPage() {
               <button
                 key={goal}
                 onClick={() => toggleGoal(goal)}
-                className={`rounded-full border px-5 py-2.5 text-base font-medium transition-colors ${
-                  selectedGoals.includes(goal)
-                    ? "border-[#b69df8] bg-[#b69df8] text-white"
-                    : "border-[#d8d7e0] bg-white text-[#16151a] hover:border-[#b69df8] hover:bg-[#efe7ff]"
-                }`}
+                className={`rounded-full border px-5 py-2.5 text-base font-medium transition-colors ${selectedGoals.includes(goal)
+                  ? "border-[#b69df8] bg-[#b69df8] text-white"
+                  : "border-[#d8d7e0] bg-white text-[#16151a] hover:border-[#b69df8] hover:bg-[#efe7ff]"
+                  }`}
               >
                 {goal}
               </button>
@@ -77,85 +76,17 @@ export default function GoalsPage() {
       </div>
 
       {/* Right Section - Testimonial Examples */}
-      <div className="hidden flex-1 bg-[#9d4edd] md:block">
-        <div className="relative flex h-full flex-col items-center justify-center p-8">
-          <div className="grid grid-cols-3 gap-4">
-            {/* Testimonial Card Examples */}
-            <div className="col-span-1 row-span-1">
-              <Image
-                src="/images/testimonial-example-1.png"
-                alt="Testimonial Example"
-                width={180}
-                height={180}
-                className="rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="col-span-2 row-span-1">
-              <Image
-                src="/images/testimonial-example-2.png"
-                alt="Testimonial Example"
-                width={380}
-                height={180}
-                className="rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="col-span-1 row-span-1">
-              <Image
-                src="/images/testimonial-example-3.png"
-                alt="Testimonial Example"
-                width={180}
-                height={180}
-                className="rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="col-span-1 row-span-1">
-              <Image
-                src="/images/testimonial-example-4.png"
-                alt="Testimonial Example"
-                width={180}
-                height={180}
-                className="rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="col-span-1 row-span-1">
-              <Image
-                src="/images/testimonial-example-5.png"
-                alt="Testimonial Example"
-                width={180}
-                height={180}
-                className="rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="col-span-1 row-span-2">
-              <Image
-                src="/images/testimonial-example-6.png"
-                alt="Testimonial Example"
-                width={180}
-                height={380}
-                className="rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="col-span-1 row-span-1">
-              <Image
-                src="/images/testimonial-example-7.png"
-                alt="Testimonial Example"
-                width={180}
-                height={180}
-                className="rounded-lg shadow-lg"
-              />
-            </div>
-            <div className="col-span-1 row-span-1">
-              <Image
-                src="/images/testimonial-example-8.png"
-                alt="Testimonial Example"
-                width={180}
-                height={180}
-                className="rounded-lg shadow-lg"
-              />
-            </div>
-          </div>
-        </div>
+      <div className="hidden md:flex flex-1 bg-[#9d4edd] h-screen relative">
+        <Image
+          src="/goals.svg"
+          alt="Testimonial Example"
+          fill
+          className="object-contain object-bottom-right"
+        />
       </div>
+
+
+
     </div>
   )
 }

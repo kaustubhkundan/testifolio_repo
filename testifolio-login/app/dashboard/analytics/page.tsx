@@ -6,7 +6,6 @@ import Link from "next/link"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { ArrowDown, ArrowUp, Calendar, Home, Star } from "lucide-react"
 
-import DashboardLayout from "@/components/dashboard/dashboard-layout"
 import { useTestimonials } from "@/hooks/use-testimonials"
 
 export default function AnalyticsPage() {
@@ -208,7 +207,6 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <DashboardLayout>
       <div className="p-6">
         {/* Breadcrumb */}
         <div className="mb-4 flex items-center text-sm">
@@ -463,6 +461,5 @@ export default function AnalyticsPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   )
 }

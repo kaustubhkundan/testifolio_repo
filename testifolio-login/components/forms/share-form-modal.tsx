@@ -55,7 +55,7 @@ export function ShareFormModal({ isOpen, onClose, formId = "", formName = "Testi
 
   if (!isOpen) return null
 
-  const formLink = `https://testifolio.com/f/${formId}`
+  const formLink = `https://testifolio-repo.vercel.app/f/${formId}`
 
   const handleCopy = () => {
     navigator.clipboard.writeText(formLink)

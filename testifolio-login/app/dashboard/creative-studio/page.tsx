@@ -45,7 +45,7 @@ export default function CreativeStudioPage() {
   }
 
   return (
-    <DashboardLayout>
+    <>
       <div className="p-6">
         {/* Breadcrumb */}
         <div className="mb-4 flex items-center text-sm">
@@ -299,6 +299,6 @@ export default function CreativeStudioPage() {
           selectedTestimonial={selectedTestimonial}
         />
       )}
-    </DashboardLayout>
+      </>
   )
 }

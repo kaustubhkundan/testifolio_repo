@@ -132,21 +132,26 @@ export default function BusinessDetailsPage() {
       </div>
 
       {/* Right Section - Illustration */}
-      <div className="hidden flex-1 bg-[#efe7ff] md:block">
-        <div className="relative flex h-full flex-col items-center justify-center p-8">
-          <div className="max-w-md">
-            <Image
-              src="/images/business-details-illustration.png"
-              alt="Business Details Illustration"
-              width={500}
-              height={400}
-              className="h-auto w-full"
-            />
-            <p className="mt-8 text-center text-xl font-medium text-[#16151a]">
-              Trusted by thousands of small businesses & creators.
-            </p>
-          </div>
+      <div className="w-1/2 bg-[#F4EBFF] flex items-center justify-center relative">
+        <div className="flex items-end gap-2">
+          <Image
+            src="/buisness-details.svg" // Girl illustration
+            alt="Girl illustration"
+            width={420}
+            height={500}
+            className="object-contain px-2"
+          />
+          <Image
+            src="/buisness-details2.svg" // Boy illustration
+            alt="Boy illustration"
+            width={420}
+            height={400}
+            className="object-contain -ml-[40%]"
+          />
         </div>
+        <p className="absolute bottom-36 text-lg text-gray-800 text-center w-full">
+          Trusted by thousands of small<br/> businesses & creators.
+        </p>
       </div>
     </div>
   )
