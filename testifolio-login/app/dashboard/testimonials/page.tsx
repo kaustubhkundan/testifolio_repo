@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  ChevronDown,
   Download,
   Edit,
   FileText,
@@ -22,8 +23,6 @@ import {
   Star,
   X,
 } from "lucide-react"
-
-import DashboardLayout from "@/components/dashboard/dashboard-layout"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
 
@@ -476,19 +475,47 @@ export default function TestimonialsPage() {
 
   return (
     <>
-      <div className="p-6">
+      <div className="flex items-center justify-between p-4 md:hidden bg-[#f2f4ff]">
+        {/* <button className="text-[#6d7cff]">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 12H21" stroke="#6d7cff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M3 6H21" stroke="#6d7cff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M3 18H21" stroke="#6d7cff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button> */}
+        {/* <div className="flex items-center">
+          <span className="text-xl font-bold text-[#6d7cff]">testifolio</span>
+          <div className="ml-1 h-5 w-5 rounded-full bg-[#6d7cff] flex items-center justify-center text-white text-xs font-bold">
+            2
+          </div>
+        </div> */}
+        <div className="flex items-center">
+          <div className="relative">
+            <Image
+              src="/professional-headshot.png"
+              alt="User"
+              width={40}
+              height={40}
+              className="rounded-full border-2 border-white"
+            />
+          </div>
+          <span className="ml-2 font-medium">Harsh</span>
+          <ChevronDown className="ml-1 h-4 w-4" />
+        </div>
+      </div>
+      <div className="p-6 bg-[#f2f4ff] md:bg-white">
+        {/* Page Title */}
+        <h1 className="mb-4 text-2xl font-bold text-gray-800">Testimonials Management</h1>
+
         {/* Breadcrumb */}
-        <div className="mb-4 flex items-center text-sm">
-          <Link href="/dashboard" className="flex items-center text-[#7c5cff]">
+        <div className="mb-6 flex items-center text-sm">
+          <Link href="/dashboard" className="flex items-center text-[#6d7cff]">
             <Home className="mr-1 h-4 w-4" />
             <span>Dashboard</span>
           </Link>
           <span className="mx-2 text-gray-400">/</span>
           <span className="text-gray-600">Testimonials</span>
         </div>
-
-        {/* Page Title */}
-        <h1 className="mb-6 text-2xl font-bold text-gray-800">Testimonials Management</h1>
 
         {isLoading ? (
           // Loading state
@@ -513,9 +540,11 @@ export default function TestimonialsPage() {
           </div>
         ) : showImported && testimonials.length > 0 ? (
           <div>
-            {/* Search and Filters */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="relative w-full sm:max-w-xs">
+            <div className="md:hidden mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Recent Testimonials</h2>
+            </div>
+            <div className="mb-6 flex flex-col gap-4">
+              <div className="relative w-full">
                 <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                   <Search className="h-4 w-4 text-gray-400" />
                 </div>
@@ -525,30 +554,32 @@ export default function TestimonialsPage() {
                   className="w-full rounded-md border border-gray-200 bg-white py-2 pl-10 pr-4 text-sm focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <select className="appearance-none rounded-md border border-gray-200 bg-gray-100 px-4 py-2 pr-8 text-sm focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]">
-                    <option>Recent</option>
-                    <option>Oldest</option>
-                    <option>Highest Rated</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
+              <div className="flex items-center gap-2 justify-between">
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <select className="appearance-none rounded-md border border-gray-200 bg-gray-100 px-4 py-2 pr-8 text-sm focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]">
+                      <option>Recent</option>
+                      <option>Oldest</option>
+                      <option>Highest Rated</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </div>
                   </div>
-                </div>
-                <div className="relative">
-                  <select className="appearance-none rounded-md border border-gray-200 bg-gray-100 px-4 py-2 pr-8 text-sm focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]">
-                    <option>Text Type</option>
-                    <option>Written</option>
-                    <option>Video</option>
-                    <option>Audio</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                      <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
+                  <div className="relative">
+                    <select className="appearance-none rounded-md border border-gray-200 bg-gray-100 px-4 py-2 pr-8 text-sm focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]">
+                      <option>Text Type</option>
+                      <option>Written</option>
+                      <option>Video</option>
+                      <option>Audio</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                      <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
                 <button
@@ -560,9 +591,10 @@ export default function TestimonialsPage() {
               </div>
             </div>
 
-            {/* Testimonials Table */}
+            {/* Testimonials Table/List View (Responsive) */}
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-              <div className="overflow-x-auto">
+              {/* Desktop Table View - Hidden on Mobile */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -654,6 +686,102 @@ export default function TestimonialsPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile List View - Shown only on Mobile */}
+              <div className="md:hidden">
+                <div className="divide-y divide-gray-200">
+                  {testimonials.map((testimonial) => (
+                    <div key={testimonial.id} className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0">
+                            <div className="relative h-10 w-10 rounded-full bg-gray-200">
+                              {testimonial.customer.avatar && (
+                                <Image
+                                  src={testimonial.customer.avatar || "/placeholder.svg"}
+                                  alt={testimonial.customer.name}
+                                  fill
+                                  className="rounded-full object-cover"
+                                />
+                              )}
+                            </div>
+                          </div>
+                          <div className="ml-3">
+                            <div className="font-medium text-gray-900">{testimonial.customer.name}</div>
+                            <div className="text-sm text-gray-500">{testimonial.customer.company}</div>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            /* Toggle expanded view */
+                          }}
+                          className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
+                        >
+                          <ChevronDown className="h-5 w-5" />
+                        </button>
+                      </div>
+
+                      {/* Expanded details - This would be conditionally shown */}
+                      <div className="mt-3 space-y-3 text-sm">
+                        <div className="flex justify-between">
+                          <div className="text-gray-500">Type:</div>
+                          <div className="font-medium">{testimonial.type}</div>
+                        </div>
+                        <div className="flex justify-between">
+                          <div className="text-gray-500">Status:</div>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              testimonial.status === "Approved"
+                                ? "bg-green-100 text-green-800"
+                                : testimonial.status === "Pending"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            <span
+                              className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
+                                testimonial.status === "Approved"
+                                  ? "bg-green-400"
+                                  : testimonial.status === "Pending"
+                                    ? "bg-yellow-400"
+                                    : "bg-blue-400"
+                              }`}
+                            ></span>
+                            {testimonial.status}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-gray-500 mb-1">Testimonial:</div>
+                          <div className="text-gray-700">{testimonial.text}</div>
+                        </div>
+                        <div className="flex justify-between items-center pt-2">
+                          <div className="text-gray-500">Action:</div>
+                          <div className="flex space-x-3">
+                            <button
+                              onClick={() => setViewingTestimonial(testimonial)}
+                              className="rounded-full bg-gray-100 p-2 text-gray-500 hover:bg-gray-200"
+                            >
+                              <FileText className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => handleEditClick(testimonial)}
+                              className="rounded-full bg-gray-100 p-2 text-gray-500 hover:bg-gray-200"
+                            >
+                              <Edit className="h-5 w-5" />
+                            </button>
+                            <button
+                              onClick={() => setShareTestimonial(testimonial)}
+                              className="rounded-full bg-gray-100 p-2 text-gray-500 hover:bg-gray-200"
+                            >
+                              <Share2 className="h-5 w-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Pagination */}
