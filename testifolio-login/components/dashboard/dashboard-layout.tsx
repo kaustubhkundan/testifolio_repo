@@ -219,171 +219,172 @@ export default function DashboardLayoutViews({ children }: DashboardLayoutProps)
 
           </button>
           <div
-          className={`sticky top-0 z-50 flex h-16 flex-shrink-0 border-b ${isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
-            }`}
-        >
-          <div className="flex flex-1 justify-between px-4">
-            <div className="flex flex-1"></div>
-            <div className="ml-4 flex items-center md:ml-6">
-              {/* Notification bell */}
+            className={`sticky top-0 z-50 flex h-16 flex-shrink-0 border-b ${isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
+              }`}
+          >
+            <div className="flex flex-1 justify-between px-4">
+              <div className="flex flex-1"></div>
+              <div className="ml-4 flex items-center md:ml-6">
+                {/* Notification bell */}
 
 
-              {/* Profile dropdown */}
-              <div className="relative ml-3">
-                <div>
-                  <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className={`flex max-w-xs items-center rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#7c5cff] focus:ring-offset-2 ${isDarkMode ? "bg-[#1a1a1a]" : "bg-white"
-                      }`}
-                    id="user-menu-button"
-                    aria-expanded={isUserMenuOpen}
-                    aria-haspopup="true"
-                  >
-                    <span className="sr-only">Open user menu</span>
-                    {isLoading ? (
-                      <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200"></div>
-                    ) : user?.user_metadata?.avatar_url ? (
-                      <Image
-                        className="h-8 w-8 rounded-full"
-                        src={user.user_metadata.avatar_url || "/placeholder.svg"}
-                        alt=""
-                        width={32}
-                        height={32}
-                      />
-                    ) : (
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#7c5cff] text-xs font-medium text-white">
-                        {userInitials}
-                      </div>
-                    )}
-                    <span
-                      className={`ml-2 hidden text-sm font-medium md:block ${isDarkMode ? "text-white" : "text-gray-700"
-                        }`}
-                    >
-                      {isLoading ? "Loading..." : userName}
-                    </span>
-                    <ChevronDown className={`ml-1 h-4 w-4 ${isDarkMode ? "text-gray-400" : "text-gray-400"}`} />
-                  </button>
-                </div>
-
-                {isUserMenuOpen && (
-                  <div
-                    className={`absolute right-0 mt-2 w-48 origin-top-right rounded-md py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${isDarkMode ? "bg-gray-800" : "bg-white"
-                      }`}
-                    role="menu"
-                    aria-orientation="vertical"
-                    aria-labelledby="user-menu-button"
-                    tabIndex={-1}
-                  >
-
-                    <Link
-                      href="/dashboard/settings"
-                      className={`flex items-center px-4 py-2 text-sm ${isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                      role="menuitem"
-                      tabIndex={-1}
-                      id="user-menu-item-1"
-                      onClick={() => setIsUserMenuOpen(false)}
-                    >
-                      <Settings className="mr-3 h-4 w-4" />
-                      Account Settings
-                    </Link>
-                    <div className={`my-1 h-px ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}></div>
+                {/* Profile dropdown */}
+                <div className="relative ml-3">
+                  <div>
                     <button
-                      className={`flex w-full items-center px-4 py-2 text-left text-sm ${isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className={`flex max-w-xs items-center rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#7c5cff] focus:ring-offset-2 ${isDarkMode ? "bg-[#1a1a1a]" : "bg-white"
                         }`}
-                      role="menuitem"
-                      tabIndex={-1}
-                      id="user-menu-item-2"
-                      onClick={() => {
-                        setIsUserMenuOpen(false)
-                        handleLogout()
-                      }}
+                      id="user-menu-button"
+                      aria-expanded={isUserMenuOpen}
+                      aria-haspopup="true"
                     >
-                      <LogOut className="mr-3 h-4 w-4" />
-                      Sign out
+                      <span className="sr-only">Open user menu</span>
+                      {isLoading ? (
+                        <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200"></div>
+                      ) : user?.user_metadata?.avatar_url ? (
+                        <Image
+                          className="h-8 w-8 rounded-full"
+                          src={user.user_metadata.avatar_url || "/placeholder.svg"}
+                          alt=""
+                          width={32}
+                          height={32}
+                        />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#7c5cff] text-xs font-medium text-white">
+                          {userInitials}
+                        </div>
+                      )}
+                      <span
+                        className={`ml-2 hidden text-sm font-medium md:block ${isDarkMode ? "text-white" : "text-gray-700"
+                          }`}
+                      >
+                        {isLoading ? "Loading..." : userName}
+                      </span>
+                      <ChevronDown className={`ml-1 h-4 w-4 ${isDarkMode ? "text-gray-400" : "text-gray-400"}`} />
                     </button>
                   </div>
-                )}
+
+                  {isUserMenuOpen && (
+                    <div
+                      className={`absolute right-0 mt-2 w-48 origin-top-right rounded-md py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none ${isDarkMode ? "bg-gray-800" : "bg-white"
+                        }`}
+                      role="menu"
+                      aria-orientation="vertical"
+                      aria-labelledby="user-menu-button"
+                      tabIndex={-1}
+                    >
+
+                      <Link
+                        href="/dashboard/settings"
+                        className={`flex items-center px-4 py-2 text-sm ${isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        role="menuitem"
+                        tabIndex={-1}
+                        id="user-menu-item-1"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Settings className="mr-3 h-4 w-4" />
+                        Account Settings
+                      </Link>
+                      <div className={`my-1 h-px ${isDarkMode ? "bg-gray-700" : "bg-gray-200"}`}></div>
+                      <button
+                        className={`flex w-full items-center px-4 py-2 text-left text-sm ${isDarkMode ? "text-gray-300 hover:bg-gray-700" : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        role="menuitem"
+                        tabIndex={-1}
+                        id="user-menu-item-2"
+                        onClick={() => {
+                          setIsUserMenuOpen(false)
+                          handleLogout()
+                        }}
+                      >
+                        <LogOut className="mr-3 h-4 w-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
-        </div>
 
         {isMobileMenuOpen && (
-  <div className="fixed inset-0 z-50 flex">
-    {/* Backdrop */}
-    
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50"
-      onClick={() => setIsMobileMenuOpen(false)}
-    />
+          <div className="fixed inset-0 z-50 flex">
+            {/* Backdrop */}
 
-    {/* Slide-in Sheet */}
-    <div
-      className={cn(
-        "relative w-64 h-full transform transition-transform duration-300 ease-in-out",
-        isDarkMode ? "bg-[#1a1a1a] text-white" : "bg-white text-black",
-        "translate-x-0" // Ensure it's in view
-      )}
-    >
-      <div className="border-r h-full overflow-y-auto px-2 py-3 space-y-1">
-      <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`flex items-center gap-2 rounded-md p-2 ${isDarkMode ? "text-gray-400 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"}`}
-          >
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 16H30" stroke="url(#paint0_linear_4848_926)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M2 6H30" stroke="url(#paint1_linear_4848_926)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M2 26H30" stroke="url(#paint2_linear_4848_926)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-              <defs>
-                <linearGradient id="paint0_linear_4848_926" x1="2" y1="16.5" x2="30" y2="16.5" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#6D7CFF" />
-                  <stop offset="1" stop-color="#F77CFF" />
-                </linearGradient>
-                <linearGradient id="paint1_linear_4848_926" x1="2" y1="6.5" x2="30" y2="6.5" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#6D7CFF" />
-                  <stop offset="1" stop-color="#F77CFF" />
-                </linearGradient>
-                <linearGradient id="paint2_linear_4848_926" x1="2" y1="26.5" x2="30" y2="26.5" gradientUnits="userSpaceOnUse">
-                  <stop stop-color="#6D7CFF" />
-                  <stop offset="1" stop-color="#F77CFF" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <img src="/mobileview.svg" alt="icon" className="mb-[2%]" />
-
-          </button>
-        {navigation.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href === "/dashboard" && pathname?.startsWith(`${item.href}/`));
-
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? isDarkMode
-                    ? "bg-[#2d2d3a] text-[#a5b4fc]"
-                    : "bg-[#f0eaff] text-[#7c5cff]"
-                  : isDarkMode
-                    ? "text-gray-300 hover:bg-gray-800"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
-              )}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50"
               onClick={() => setIsMobileMenuOpen(false)}
+            />
+
+            {/* Slide-in Sheet */}
+            <div
+              className={cn(
+                "relative w-64 h-full transform transition-transform duration-300 ease-in-out",
+                isDarkMode ? "bg-[#1a1a1a] text-white" : "bg-white text-black",
+                "translate-x-0" // Ensure it's in view
+              )}
             >
-              <item.icon />
-              {item.name}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  </div>
-)}
+              <div className="border-r h-full overflow-y-auto px-2 py-3 space-y-1">
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className={`flex items-center gap-2 rounded-md p-2 ${isDarkMode ? "text-gray-400 hover:bg-gray-800" : "text-gray-600 hover:bg-gray-100"}`}
+                >
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 16H30" stroke="url(#paint0_linear_4848_926)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M2 6H30" stroke="url(#paint1_linear_4848_926)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M2 26H30" stroke="url(#paint2_linear_4848_926)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    <defs>
+                      <linearGradient id="paint0_linear_4848_926" x1="2" y1="16.5" x2="30" y2="16.5" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#6D7CFF" />
+                        <stop offset="1" stop-color="#F77CFF" />
+                      </linearGradient>
+                      <linearGradient id="paint1_linear_4848_926" x1="2" y1="6.5" x2="30" y2="6.5" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#6D7CFF" />
+                        <stop offset="1" stop-color="#F77CFF" />
+                      </linearGradient>
+                      <linearGradient id="paint2_linear_4848_926" x1="2" y1="26.5" x2="30" y2="26.5" gradientUnits="userSpaceOnUse">
+                        <stop stop-color="#6D7CFF" />
+                        <stop offset="1" stop-color="#F77CFF" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <img src="/mobileview.svg" alt="icon" className="mb-[2%]" />
+
+                </button>
+                {navigation.map((item) => {
+                   const isActive =
+                   item.href === "/dashboard"
+                     ? pathname === "/dashboard"
+                     : pathname?.startsWith(item.href);
+
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                        isActive
+                          ? isDarkMode
+                            ? "bg-[#2d2d3a] text-[#a5b4fc]"
+                            : "bg-[#f0eaff] text-[#7c5cff]"
+                          : isDarkMode
+                            ? "text-gray-300 hover:bg-gray-800"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <item.icon />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -401,10 +402,10 @@ export default function DashboardLayoutViews({ children }: DashboardLayoutProps)
           <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
             <nav className="mt-5 flex-1 space-y-1 px-2">
               {navigation.map((item) => {
-const isActive =
-item.href === "/dashboard"
-  ? pathname === "/dashboard"
-  : pathname?.startsWith(item.href);
+                const isActive =
+                  item.href === "/dashboard"
+                    ? pathname === "/dashboard"
+                    : pathname?.startsWith(item.href);
 
 
                 return (
@@ -461,15 +462,15 @@ item.href === "/dashboard"
       </div>
 
       {/* Main content */}
-     <div className="lg:pl-64">
+      <div className="lg:pl-64">
         {/* Top navigation */}
         <div
-          className={`sticky top-0 z-10 flex h-16 flex-shrink-0 border-b ${isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
+          className={`sticky hidden lg:block  top-0 z-10 flex h-16 flex-shrink-0 border-b ${isDarkMode ? "border-gray-700 bg-[#1a1a1a]" : "border-gray-200 bg-white"
             }`}
         >
           <div className="flex flex-1 justify-between px-4">
             <div className="flex flex-1"></div>
-            <div className="ml-4 flex items-center md:ml-6">
+            <div className="ml-4 flex items-center md:ml-6 mt-4">
               {/* Notification bell */}
 
 

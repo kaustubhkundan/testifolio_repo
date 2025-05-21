@@ -490,19 +490,7 @@ export default function TestimonialsPage() {
             2
           </div>
         </div> */}
-        <div className="flex items-center">
-          <div className="relative">
-            <Image
-              src="/professional-headshot.png"
-              alt="User"
-              width={40}
-              height={40}
-              className="rounded-full border-2 border-white"
-            />
-          </div>
-          <span className="ml-2 font-medium">Harsh</span>
-          <ChevronDown className="ml-1 h-4 w-4" />
-        </div>
+  
       </div>
       <div className="p-6 bg-[#f2f4ff] md:bg-white">
         {/* Page Title */}
