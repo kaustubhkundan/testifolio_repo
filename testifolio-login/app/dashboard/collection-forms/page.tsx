@@ -29,6 +29,7 @@ export default function CollectionFormsPage() {
   const [showShareModal, setShowShareModal] = useState(false)
   const [selectedForm, setSelectedForm] = useState<{ id: string; name: string } | null>(null)
   const [showWelcomeEditor, setShowWelcomeEditor] = useState(true) // For demo purposes, showing the welcome editor view
+  const [activeTab, setActiveTab] = useState("welcome") // Track active tab in form editor
 
   useEffect(() => {
     async function fetchForms() {
@@ -119,7 +120,15 @@ export default function CollectionFormsPage() {
             </div>
             <div className="mt-4 w-full">
               <div className="flex flex-col items-center py-3">
-                <button className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200">
+                <button
+                  onClick={() => {
+                    // In a real app, this would save and return to dashboard
+                    if (confirm("Save changes and return to dashboard?")) {
+                      setShowWelcomeEditor(false)
+                    }
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200"
+                >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M9 22V12H15V22M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
@@ -132,7 +141,10 @@ export default function CollectionFormsPage() {
                 </button>
               </div>
               <div className="flex flex-col items-center py-3">
-                <button className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 bg-[#f2f4ff]">
+                <button
+                  onClick={() => setActiveTab("welcome")}
+                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 bg-[#f2f4ff]"
+                >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z"
@@ -147,7 +159,14 @@ export default function CollectionFormsPage() {
                 </button>
               </div>
               <div className="flex flex-col items-center py-3">
-                <button className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200">
+                <button
+                  onClick={() => {
+                    alert("Form settings will be available here")
+                    // In a real app, this would show form settings
+                    // setActiveTab("settings")
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200"
+                >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
@@ -167,7 +186,14 @@ export default function CollectionFormsPage() {
                 </button>
               </div>
               <div className="flex flex-col items-center py-3">
-                <button className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200">
+                <button
+                  onClick={() => {
+                    alert("Form fields list will be available here")
+                    // In a real app, this would show form fields list
+                    // setActiveTab("fields")
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200"
+                >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01"
@@ -180,7 +206,14 @@ export default function CollectionFormsPage() {
                 </button>
               </div>
               <div className="flex flex-col items-center py-3">
-                <button className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200">
+                <button
+                  onClick={() => {
+                    alert("Form analytics will be available here")
+                    // In a real app, this would show form analytics
+                    // setActiveTab("analytics")
+                  }}
+                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200"
+                >
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M18 20V10M12 20V4M6 20V14"
