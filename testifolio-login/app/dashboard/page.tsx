@@ -143,6 +143,8 @@ export default function DashboardPage() {
 
   // Fetch dashboard stats and testimonials
   useEffect(() => {
+    if (recentTestimonials.length > 0 && !isTestimonialsLoading) return
+
     if (user) {
       // Fetch data in parallel
       Promise.all([fetchDashboardStats(), fetchRecentTestimonials()]).catch((error) => {

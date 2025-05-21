@@ -98,6 +98,7 @@ export default function TestimonialsPage() {
   useEffect(() => {
     const fetchTestimonials = async () => {
       if (!user) return
+      if (testimonials.length > 0 && !isLoading) return
 
       try {
         setIsLoading(true)

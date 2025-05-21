@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronDown, Eye, FileText, Home, Loader2, Pencil, Plus, Share2 } from "lucide-react"
+import { Code, Copy, Eye, FileText, Loader2, MoreVertical, Plus, Share2 } from "lucide-react"
 
 import { useAuth } from "@/contexts/auth-context"
 import { NewFormModal } from "@/components/forms/new-form-modal"
 import { ShareFormModal } from "@/components/forms/share-form-modal"
+import { EmbedFormModal } from "@/components/forms/embed-form-modal"
 import { supabase } from "@/lib/supabase"
 
 type Form = {
@@ -25,15 +26,47 @@ export default function CollectionFormsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showNewFormModal, setShowNewFormModal] = useState(false)
-  const [showImportedCollection, setShowImportedCollection] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showEmbedModal, setShowEmbedModal] = useState(false)
   const [selectedForm, setSelectedForm] = useState<{ id: string; name: string } | null>(null)
-  const [showWelcomeEditor, setShowWelcomeEditor] = useState(true) // For demo purposes, showing the welcome editor view
-  const [activeTab, setActiveTab] = useState("welcome") // Track active tab in form editor
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  // Check if mobile
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+
+    checkIfMobile()
+    window.addEventListener("resize", checkIfMobile)
+
+    return () => {
+      window.removeEventListener("resize", checkIfMobile)
+    }
+  }, [])
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setActiveMenuId(null)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
 
   useEffect(() => {
     async function fetchForms() {
       if (!user) return
+
+      // Check if we already have forms data and don't need to reload
+      if (forms.length > 0 && !loading) return
 
       try {
         setLoading(true)
@@ -49,11 +82,6 @@ export default function CollectionFormsPage() {
         }
 
         setForms(data || [])
-
-        // If we have forms, show the forms view
-        if (data && data.length > 0) {
-          setShowImportedCollection(true)
-        }
       } catch (err) {
         console.error("Error fetching forms:", err)
         setError("Failed to load forms. Please try again.")
@@ -76,8 +104,14 @@ export default function CollectionFormsPage() {
           filter: `user_id=eq.${user?.id}`,
         },
         (payload) => {
-          // Refresh the forms when there's a change
-          fetchForms()
+          // Instead of re-fetching everything, update the forms array directly
+          if (payload.eventType === "INSERT") {
+            setForms((prev) => [payload.new as Form, ...prev])
+          } else if (payload.eventType === "UPDATE") {
+            setForms((prev) => prev.map((form) => (form.id === payload.new.id ? (payload.new as Form) : form)))
+          } else if (payload.eventType === "DELETE") {
+            setForms((prev) => prev.filter((form) => form.id !== payload.old.id))
+          }
         },
       )
       .subscribe()
@@ -90,6 +124,72 @@ export default function CollectionFormsPage() {
   const handleShareClick = (form: { id: string; name: string }) => {
     setSelectedForm(form)
     setShowShareModal(true)
+    setActiveMenuId(null)
+  }
+
+  const handleEmbedClick = (form: { id: string; name: string }) => {
+    setSelectedForm(form)
+    setShowEmbedModal(true)
+    setActiveMenuId(null)
+  }
+
+  const handleCopyLink = (formId: string) => {
+    const link = `${window.location.origin}/forms/${formId}`
+    navigator.clipboard.writeText(link)
+    alert("Form link copied to clipboard!")
+    setActiveMenuId(null)
+  }
+
+  const handleDuplicateForm = async (form: Form) => {
+    try {
+      const { data, error } = await supabase
+        .from("collection_forms")
+        .insert({
+          name: `${form.name} (Copy)`,
+          user_id: user?.id,
+          settings: form.settings,
+          status: form.status,
+        })
+        .select()
+
+      if (error) {
+        console.error("Error duplicating form:", error)
+        alert("Failed to duplicate form. Please try again.")
+        return
+      }
+
+      alert("Form duplicated successfully!")
+    } catch (err) {
+      console.error("Error duplicating form:", err)
+      alert("Failed to duplicate form. Please try again.")
+    } finally {
+      setActiveMenuId(null)
+    }
+  }
+
+  const handleDeleteForm = async (formId: string) => {
+    if (!confirm("Are you sure you want to delete this form? This action cannot be undone.")) {
+      return
+    }
+
+    try {
+      const { error } = await supabase.from("collection_forms").delete().eq("id", formId)
+
+      if (error) {
+        console.error("Error deleting form:", error)
+        alert("Failed to delete form. Please try again.")
+        return
+      }
+
+      // Remove the form from the local state
+      setForms(forms.filter((form) => form.id !== formId))
+      alert("Form deleted successfully!")
+    } catch (err) {
+      console.error("Error deleting form:", err)
+      alert("Failed to delete form. Please try again.")
+    } finally {
+      setActiveMenuId(null)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -101,219 +201,32 @@ export default function CollectionFormsPage() {
     })
   }
 
-  // If showing the welcome editor view
-  if (showWelcomeEditor) {
-    return (
-      <div className="flex h-screen">
-        {/* Left Sidebar */}
-        <div className="w-[134px] border-r border-gray-200 bg-white">
-          <div className="flex flex-col items-center">
-            <div className="p-4">
-              <div className="relative h-12 w-12">
-                <div className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#a78bfa] text-xs text-white">
-                  💬
-                </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[#a78bfa] text-2xl font-bold text-white">
-                  t
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 w-full">
-              <div className="flex flex-col items-center py-3">
-                <button
-                  onClick={() => {
-                    // In a real app, this would save and return to dashboard
-                    if (confirm("Save changes and return to dashboard?")) {
-                      setShowWelcomeEditor(false)
-                    }
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M9 22V12H15V22M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
-                      stroke="#9CA3AF"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className="flex flex-col items-center py-3">
-                <button
-                  onClick={() => setActiveTab("welcome")}
-                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200 bg-[#f2f4ff]"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z"
-                      stroke="#9CA3AF"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path d="M9 7H7V17H9V7Z" fill="#9CA3AF" />
-                    <path d="M15 7H13V17H15V7Z" fill="#9CA3AF" />
-                  </svg>
-                </button>
-              </div>
-              <div className="flex flex-col items-center py-3">
-                <button
-                  onClick={() => {
-                    alert("Form settings will be available here")
-                    // In a real app, this would show form settings
-                    // setActiveTab("settings")
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
-                      stroke="#9CA3AF"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M19.4 15C19.2669 15.3016 19.2272 15.6362 19.286 15.9606C19.3448 16.285 19.4995 16.5843 19.73 16.82L19.79 16.88C19.976 17.0657 20.1235 17.2863 20.2241 17.5291C20.3248 17.7719 20.3766 18.0322 20.3766 18.295C20.3766 18.5578 20.3248 18.8181 20.2241 19.0609C20.1235 19.3037 19.976 19.5243 19.79 19.71C19.6043 19.896 19.3837 20.0435 19.1409 20.1441C18.8981 20.2448 18.6378 20.2966 18.375 20.2966C18.1122 20.2966 17.8519 20.2448 17.6091 20.1441C17.3663 20.0435 17.1457 19.896 16.96 19.71L16.9 19.65C16.6643 19.4195 16.365 19.2648 16.0406 19.206C15.7162 19.1472 15.3816 19.1869 15.08 19.32C14.7842 19.4468 14.532 19.6572 14.3543 19.9255C14.1766 20.1938 14.0813 20.5082 14.08 20.83V21C14.08 21.5304 13.8693 22.0391 13.4942 22.4142C13.1191 22.7893 12.6104 23 12.08 23C11.5496 23 11.0409 22.7893 10.6658 22.4142C10.2907 22.0391 10.08 21.5304 10.08 21V20.91C10.0723 20.579 9.96512 20.258 9.77251 19.9887C9.5799 19.7194 9.31074 19.5143 9 19.4C8.69838 19.2669 8.36381 19.2272 8.03941 19.286C7.71502 19.3448 7.41568 19.4995 7.18 19.73L7.12 19.79C6.93425 19.976 6.71368 20.1235 6.47088 20.2241C6.22808 20.3248 5.96783 20.3766 5.705 20.3766C5.44217 20.3766 5.18192 20.3248 4.93912 20.2241C4.69632 20.1235 4.47575 19.976 4.29 19.79C4.10405 19.6043 3.95653 19.3837 3.85588 19.1409C3.75523 18.8981 3.70343 18.6378 3.70343 18.375C3.70343 18.1122 3.75523 17.8519 3.85588 17.6091C3.95653 17.3663 4.10405 17.1457 4.29 16.96L4.35 16.9C4.58054 16.6643 4.73519 16.365 4.794 16.0406C4.85282 15.7162 4.81312 15.3816 4.68 15.08C4.55324 14.7842 4.34276 14.532 4.07447 14.3543C3.80618 14.1766 3.49179 14.0813 3.17 14.08H3C2.46957 14.08 1.96086 13.8693 1.58579 13.4942C1.21071 13.1191 1 12.6104 1 12.08C1 11.5496 1.21071 11.0409 1.58579 10.6658C1.96086 10.2907 2.46957 10.08 3 10.08H3.09C3.42099 10.0723 3.742 9.96512 4.0113 9.77251C4.28059 9.5799 4.48572 9.31074 4.6 9C4.73312 8.69838 4.77282 8.36381 4.714 8.03941C4.65519 7.71502 4.50054 7.41568 4.27 7.18L4.21 7.12C4.02405 6.93425 3.87653 6.71368 3.77588 6.47088C3.67523 6.22808 3.62343 5.96783 3.62343 5.705C3.62343 5.44217 3.67523 5.18192 3.77588 4.93912C3.87653 4.69632 4.02405 4.47575 4.21 4.29C4.39575 4.10405 4.61632 3.95653 4.85912 3.85588C5.10192 3.75523 5.36217 3.70343 5.625 3.70343C5.88783 3.70343 6.14808 3.75523 6.39088 3.85588C6.63368 3.95653 6.85425 4.10405 7.04 4.29L7.1 4.35C7.33568 4.58054 7.63502 4.73519 7.95941 4.794C8.28381 4.85282 8.61838 4.81312 8.92 4.68H9C9.29577 4.55324 9.54802 4.34276 9.72569 4.07447C9.90337 3.80618 9.99872 3.49179 10 3.17V3C10 2.46957 10.2107 1.96086 10.5858 1.58579C10.9609 1.21071 11.4696 1 12 1C12.5304 1 13.0391 1.21071 13.4142 1.58579C13.7893 1.96086 14 2.46957 14 3V3.09C14.0013 3.41179 14.0966 3.72618 14.2743 3.99447C14.452 4.26276 14.7042 4.47324 15 4.6C15.3016 4.73312 15.6362 4.77282 15.9606 4.714C16.285 4.65519 16.5843 4.50054 16.82 4.27L16.88 4.21C17.0657 4.02405 17.2863 3.87653 17.5291 3.77588C17.7719 3.67523 18.0322 3.62343 18.295 3.62343C18.5578 3.62343 18.8181 3.67523 19.0609 3.77588C19.3037 3.87653 19.5243 4.02405 19.71 4.21C19.896 4.39575 20.0435 4.61632 20.1441 4.85912C20.2448 5.10192 20.2966 5.36217 20.2966 5.625C20.2966 5.88783 20.2448 6.14808 20.1441 6.39088C20.0435 6.63368 19.896 6.85425 19.71 7.04L19.65 7.1C19.4195 7.33568 19.2648 7.63502 19.206 7.95941C19.1472 8.28381 19.1869 8.61838 19.32 8.92V9C19.4468 9.29577 19.6572 9.54802 19.9255 9.72569C20.1938 9.90337 20.5082 9.99872 20.83 10H21C21.5304 10 22.0391 10.2107 22.4142 10.5858C22.7893 10.9609 23 11.4696 23 12C23 12.5304 22.7893 13.0391 22.4142 13.4142C22.0391 13.7893 21.5304 14 21 14H20.91C20.5882 14.0013 20.2738 14.0966 20.0055 14.2743C19.7372 14.452 19.5268 14.7042 19.4 15Z"
-                      stroke="#9CA3AF"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className="flex flex-col items-center py-3">
-                <button
-                  onClick={() => {
-                    alert("Form fields list will be available here")
-                    // In a real app, this would show form fields list
-                    // setActiveTab("fields")
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M8 6H21M8 12H21M8 18H21M3 6H3.01M3 12H3.01M3 18H3.01"
-                      stroke="#9CA3AF"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className="flex flex-col items-center py-3">
-                <button
-                  onClick={() => {
-                    alert("Form analytics will be available here")
-                    // In a real app, this would show form analytics
-                    // setActiveTab("analytics")
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-md border border-gray-200"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M18 20V10M12 20V4M6 20V14"
-                      stroke="#9CA3AF"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto bg-white">
-          <div className="p-4">
-            <button
-              onClick={() => setShowWelcomeEditor(false)}
-              className="mb-6 flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path
-                  d="M19 12H5M12 19L5 12L12 5"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Welcome 👋</h1>
-                <p className="mt-2 text-gray-600">
-                  This welcome page of your form is where people choose their type of testimonial.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Welcome Page Title</label>
-                <input
-                  type="text"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
-                  placeholder="How would you like to leave your testimonial?"
-                  defaultValue="How would you like to leave your testimonial?"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Welcome Message</label>
-                <textarea
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
-                  rows={4}
-                  placeholder="Enter welcome message"
-                  defaultValue="Choose to either leave a video or written testimonial! 😊"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-medium text-gray-800">Require Star Rating</h3>
-                  <p className="text-sm text-gray-500">Toggle this option to show or hide star ratings</p>
-                </div>
-                <div className="relative">
-                  <input type="checkbox" id="toggle" className="sr-only" defaultChecked />
-                  <div className="h-6 w-11 rounded-full bg-[#12b981]"></div>
-                  <div className="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition"></div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Collection Type</label>
-                <p className="text-sm text-gray-500">Choose what type of testimonials you want to collect.</p>
-                <div className="relative">
-                  <select className="w-full appearance-none rounded-md border border-gray-300 bg-white px-3 py-2 pr-10 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]">
-                    <option>Text and video testimonials</option>
-                    <option>Text testimonials only</option>
-                    <option>Video testimonials only</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <ChevronDown className="h-5 w-5" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+  const toggleMenu = (formId: string) => {
+    if (activeMenuId === formId) {
+      setActiveMenuId(null)
+    } else {
+      setActiveMenuId(formId)
+    }
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 bg-[#f8f9fe]">
       {/* Breadcrumb */}
-      <div className="mb-4 flex items-center text-sm">
-        <Link href="/dashboard" className="flex items-center text-[#7c5cff]">
-          <Home className="mr-1 h-4 w-4" />
+      <div className="flex items-center text-sm mb-4">
+        <Link href="/dashboard" className="text-[#6d7cff] flex items-center">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="mr-1"
+          >
+            <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+            <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+            <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+            <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+          </svg>
           <span>Dashboard</span>
         </Link>
         <span className="mx-2 text-gray-400">/</span>
@@ -321,23 +234,23 @@ export default function CollectionFormsPage() {
       </div>
 
       {/* Page Title */}
-      <h1 className="mb-2 text-2xl font-bold text-gray-800">Collection Forms</h1>
-      <p className="mb-6 text-gray-600">
+      <h1 className="text-2xl font-bold text-gray-800 mb-2">Collection Forms</h1>
+      <p className="text-gray-600 mb-6">
         Easily collect AI-powered testimonials from your customers using a simple link.
       </p>
 
       {loading ? (
         // Loading state
-        <div className="flex h-64 items-center justify-center rounded-lg border border-gray-200 bg-white">
+        <div className="flex items-center justify-center h-64 bg-white rounded-lg border border-gray-200">
           <div className="flex flex-col items-center">
-            <Loader2 className="mb-2 h-8 w-8 animate-spin text-[#7c5cff]" />
+            <Loader2 className="h-8 w-8 animate-spin text-[#6d7cff] mb-2" />
             <p className="text-gray-600">Loading your forms...</p>
           </div>
         </div>
       ) : error ? (
         // Error state
-        <div className="flex h-64 flex-col items-center justify-center rounded-lg border border-gray-200 bg-white">
-          <div className="mb-4 rounded-full bg-red-100 p-3 text-red-600">
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg border border-gray-200">
+          <div className="text-red-600 bg-red-100 p-3 rounded-full mb-4">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-6 w-6"
@@ -353,215 +266,405 @@ export default function CollectionFormsPage() {
               />
             </svg>
           </div>
-          <p className="mb-4 text-center text-gray-800">{error}</p>
+          <p className="text-gray-800 text-center mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="rounded-md bg-[#7c5cff] px-4 py-2 text-white hover:bg-[#6a4ddb]"
+            className="bg-[#6d7cff] text-white px-4 py-2 rounded-md hover:bg-[#5a69ff]"
           >
             Try Again
           </button>
         </div>
-      ) : showImportedCollection && forms.length > 0 ? (
-        // Forms list view
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <div className="mb-6 flex justify-between">
-            <button
-              onClick={() => setShowImportedCollection(false)}
-              className="flex items-center gap-2 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M19 12H5M12 19l-7-7 7-7" />
-              </svg>
-              <span>Back to Forms</span>
-            </button>
-            <button
-              onClick={() => setShowNewFormModal(true)}
-              className="flex items-center gap-2 rounded-md bg-[#7c5cff] px-4 py-2 text-sm font-medium text-white hover:bg-[#6a4ddb]"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create a New Form</span>
-            </button>
-          </div>
+      ) : (
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          {/* Create Form Button */}
+          <button
+            onClick={() => setShowNewFormModal(true)}
+            className="bg-gradient-to-r from-[#a5b4fc] to-[#818cf8] text-white px-6 py-3 rounded-lg mb-8 flex items-center justify-center"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            <span>Create a New Form</span>
+          </button>
 
-          <div className="overflow-hidden rounded-lg border border-gray-200">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  <th className="px-6 py-3">Form Name</th>
-                  <th className="px-6 py-3">Responses</th>
-                  <th className="px-6 py-3">Created On</th>
-                  <th className="px-6 py-3">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {forms.map((form) => (
-                  <tr key={form.id} className="hover:bg-gray-50">
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="mr-3 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-[#f0eaff]">
-                          <FileText className="h-5 w-5 text-[#7c5cff]" />
+          {forms.length === 0 ? (
+            // Empty state
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="mb-6">
+                <Image
+                  src="/forms-and-documents.png"
+                  alt="No forms"
+                  width={200}
+                  height={200}
+                  className="h-auto w-auto"
+                />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">No forms yet</h3>
+              <p className="text-gray-600 text-center mb-6 max-w-md">
+                Create your first form to start collecting testimonials from your customers.
+              </p>
+              <button
+                onClick={() => setShowNewFormModal(true)}
+                className="bg-[#6d7cff] text-white px-4 py-2 rounded-md hover:bg-[#5a69ff]"
+              >
+                <Plus className="h-4 w-4 inline-block mr-2" />
+                <span>Create Your First Form</span>
+              </button>
+            </div>
+          ) : (
+            // Forms list
+            <div className="space-y-4">
+              {forms.map((form) => (
+                <div
+                  key={form.id}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-[#6d7cff] transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 mr-3">
+                        <div className="h-10 w-10 bg-[#f0eaff] rounded-md flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-[#6d7cff]" />
                         </div>
-                        <div>
-                          <div className="font-medium text-gray-900">{form.name}</div>
-                          {form.is_active && (
-                            <div className="flex items-center">
-                              <span className="mr-1.5 h-2 w-2 rounded-full bg-green-400"></span>
-                              <span className="text-xs text-gray-500">Active</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-gray-900">{form.name}</h3>
+                        <div className="flex items-center text-sm text-gray-500">
+                          <span className="mr-2">{form.responses_count} responses</span>
+                          <span className="text-gray-400">•</span>
+                          <span className="ml-2">created on {formatDate(form.created_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center">
+                      {isMobile ? (
+                        <div className="relative" ref={menuRef}>
+                          <button
+                            onClick={() => toggleMenu(form.id)}
+                            className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"
+                          >
+                            <MoreVertical className="h-5 w-5" />
+                          </button>
+                          {activeMenuId === form.id && (
+                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                              <div className="py-1">
+                                <button
+                                  onClick={() => handleEmbedClick({ id: form.id, name: form.name })}
+                                  className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="mr-3 text-gray-500"
+                                  >
+                                    <path
+                                      d="M9 15L3 9L9 3"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                    <path
+                                      d="M15 3L21 9L15 15"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                  Embed form
+                                </button>
+                                <button
+                                  onClick={() => handleCopyLink(form.id)}
+                                  className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="mr-3 text-gray-500"
+                                  >
+                                    <path
+                                      d="M13.7778 2.22222L10.2222 2.22222C8.99492 2.22222 8 3.21714 8 4.44444L8 19.5556C8 20.7829 8.99492 21.7778 10.2222 21.7778L17.7778 21.7778C19.0051 21.7778 20 20.7829 20 19.5556L20 8.44444M13.7778 2.22222L20 8.44444M13.7778 2.22222L13.7778 8.44444L20 8.44444"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                    <path
+                                      d="M8 17.5L4.22222 17.5C2.99492 17.5 2 16.5051 2 15.2778L2 4.22222C2 2.99492 2.99492 2 4.22222 2L11.7778 2C13.0051 2 14 2.99492 14 4.22222L14 6"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                  Copy form link
+                                </button>
+                                <button
+                                  onClick={() => handleDuplicateForm(form)}
+                                  className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="mr-3 text-gray-500"
+                                  >
+                                    <path
+                                      d="M16 4H18C19.1046 4 20 4.89543 20 6V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V16"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                    />
+                                    <rect
+                                      x="8"
+                                      y="4"
+                                      width="12"
+                                      height="12"
+                                      rx="2"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                    />
+                                  </svg>
+                                  Duplicate form
+                                </button>
+                                <button
+                                  onClick={() => window.open(`/forms/${form.id}`, "_blank")}
+                                  className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="mr-3 text-gray-500"
+                                  >
+                                    <path
+                                      d="M14 5L21 12M21 12L14 19M21 12H3"
+                                      stroke="currentColor"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                  See live
+                                </button>
+                              </div>
                             </div>
                           )}
-                          {form.collection_type && <div className="text-xs text-gray-500">{form.collection_type}</div>}
                         </div>
-                      </div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="text-sm text-gray-900">{form.responses_count}</div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="text-sm text-gray-500">{formatDate(form.created_at)}</div>
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <div className="flex space-x-2">
-                        <Link
-                          href={`/dashboard/collection-forms/${form.id}`}
-                          className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
-                        >
-                          <Eye className="h-5 w-5" />
-                        </Link>
-                        <Link
-                          href={`/dashboard/collection-forms/${form.id}`}
-                          className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
-                        >
-                          <Pencil className="h-5 w-5" />
-                        </Link>
-                        <button
-                          onClick={() => handleShareClick({ id: form.id, name: form.name })}
-                          className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
-                        >
-                          <Share2 className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : (
-        /* Empty State Card */
-        <div className="rounded-lg border border-gray-200 bg-white p-8">
-          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
-            <div className="max-w-lg">
-              <h2 className="mb-4 text-2xl font-bold text-gray-800">Get even more testimonials! ✨</h2>
-              <p className="mb-6 text-gray-600">
-                Create nice looking, shareable forms to let customers say some great things about you and your business.
-              </p>
+                      ) : (
+                        <div className="flex items-center">
+                          {isMobile ? (
+                            <div className="relative" ref={menuRef}>
+                              <button
+                                onClick={() => toggleMenu(form.id)}
+                                className="p-2 text-gray-500 hover:bg-gray-100 rounded-full"
+                              >
+                                <MoreVertical className="h-5 w-5" />
+                              </button>
+                              {activeMenuId === form.id && (
+                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                                  <div className="py-1">
+                                    <button
+                                      onClick={() => handleEmbedClick({ id: form.id, name: form.name })}
+                                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                      <Code className="h-4 w-4 mr-3 text-gray-500" />
+                                      Embed form
+                                    </button>
+                                    <button
+                                      onClick={() => handleCopyLink(form.id)}
+                                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                      <Share2 className="h-4 w-4 mr-3 text-gray-500" />
+                                      Copy form link
+                                    </button>
+                                    <button
+                                      onClick={() => handleDuplicateForm(form)}
+                                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                      <Copy className="h-4 w-4 mr-3 text-gray-500" />
+                                      Duplicate form
+                                    </button>
+                                    <button
+                                      onClick={() => window.open(`/forms/${form.id}`, "_blank")}
+                                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                      <Eye className="h-4 w-4 mr-3 text-gray-500" />
+                                      See live
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleShareClick({ id: form.id, name: form.name })}
+                                className="text-gray-500 hover:text-[#6d7cff] p-2"
+                                title="Invite"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M16.6667 3.33334H3.33341C2.41294 3.33334 1.66675 4.07954 1.66675 5.00001V15C1.66675 15.9205 2.41294 16.6667 3.33341 16.6667H16.6667C17.5872 16.6667 18.3334 15.9205 18.3334 15V5.00001C18.3334 4.07954 17.5872 3.33334 16.6667 3.33334Z" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M18.3334 5.83334L10.8584 10.5833C10.6011 10.7445 10.3037 10.83 10.0001 10.83C9.69648 10.83 9.39902 10.7445 9.14175 10.5833L1.66675 5.83334" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
 
-              <div className="mb-6 space-y-2">
-                <div className="flex items-center">
-                  <div className="mr-2 flex h-5 w-5 items-center justify-center rounded-sm bg-green-500 text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Create a form in 2 minutes</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="mr-2 flex h-5 w-5 items-center justify-center rounded-sm bg-green-500 text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Style it to match your brand</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="mr-2 flex h-5 w-5 items-center justify-center rounded-sm bg-green-500 text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Collect video & text testimonials with ease</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="mr-2 flex h-5 w-5 items-center justify-center rounded-sm bg-green-500 text-white">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-gray-700">Share with a link or embed it on your site</span>
-                </div>
-              </div>
+                              </button>
+                              <button
+                                onClick={() => handleEmbedClick({ id: form.id, name: form.name })}
+                                className="text-gray-500 hover:text-[#6d7cff] p-2"
+                                title="Embed code"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M15 13.3333L18.3333 9.99999L15 6.66666" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M5.00008 6.66666L1.66675 9.99999L5.00008 13.3333" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M12.0834 3.33334L7.91675 16.6667" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
 
-              <div className="flex flex-col space-y-3 sm:flex-row sm:space-x-3 sm:space-y-0">
-                <button
-                  onClick={() => setShowNewFormModal(true)}
-                  className="flex items-center justify-center gap-2 rounded-md bg-[#7c5cff] px-4 py-2 text-white hover:bg-[#6a4ddb]"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Create a New Form</span>
-                </button>
+                              </button>
+                              <button
+                                onClick={() => handleShareClick({ id: form.id, name: form.name })}
+                                className="text-gray-500 hover:text-[#6d7cff] p-2"
+                                title="Copy link"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M15 6.66666C16.3807 6.66666 17.5 5.54737 17.5 4.16666C17.5 2.78594 16.3807 1.66666 15 1.66666C13.6193 1.66666 12.5 2.78594 12.5 4.16666C12.5 5.54737 13.6193 6.66666 15 6.66666Z" stroke="#667085" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M5 12.5C6.38071 12.5 7.5 11.3807 7.5 10C7.5 8.61929 6.38071 7.5 5 7.5C3.61929 7.5 2.5 8.61929 2.5 10C2.5 11.3807 3.61929 12.5 5 12.5Z" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M15 18.3333C16.3807 18.3333 17.5 17.2141 17.5 15.8333C17.5 14.4526 16.3807 13.3333 15 13.3333C13.6193 13.3333 12.5 14.4526 12.5 15.8333C12.5 17.2141 13.6193 18.3333 15 18.3333Z" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M7.15845 11.2583L12.8501 14.575" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M12.8418 5.42499L7.15845 8.74165" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
 
-                {forms.length > 0 && (
-                  <button
-                    onClick={() => setShowImportedCollection(true)}
-                    className="flex items-center justify-center gap-2 rounded-md border border-[#7c5cff] bg-white px-4 py-2 text-[#7c5cff] hover:bg-[#f8f7ff]"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span>View Your Forms</span>
-                  </button>
-                )}
-              </div>
+                              </button>
+                              <button
+                                onClick={() => handleDuplicateForm(form)}
+                                className="text-gray-500 hover:text-[#6d7cff] p-2"
+                                title="Duplicate"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <g clip-path="url(#clip0_5017_1466)">
+                                    <path d="M12.5 10V15" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M10 12.5H15" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M16.6667 6.66666H8.33341C7.41294 6.66666 6.66675 7.41285 6.66675 8.33332V16.6667C6.66675 17.5871 7.41294 18.3333 8.33341 18.3333H16.6667C17.5872 18.3333 18.3334 17.5871 18.3334 16.6667V8.33332C18.3334 7.41285 17.5872 6.66666 16.6667 6.66666Z" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M3.33341 13.3333C2.41675 13.3333 1.66675 12.5833 1.66675 11.6667V3.33332C1.66675 2.41666 2.41675 1.66666 3.33341 1.66666H11.6667C12.5834 1.66666 13.3334 2.41666 13.3334 3.33332" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  </g>
+                                  <defs>
+                                    <clipPath id="clip0_5017_1466">
+                                      <rect width="20" height="20" fill="white" />
+                                    </clipPath>
+                                  </defs>
+                                </svg>
+
+                              </button>
+                              <Link
+                                href={`/dashboard/collection-forms/${form.id}`}
+                                className="text-gray-500 hover:text-[#6d7cff] p-2"
+                                title="Edit"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M12.5 2.5H17.5V7.5" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M8.33325 11.6667L17.4999 2.5" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  <path d="M15 10.8333V15.8333C15 16.2754 14.8244 16.6993 14.5118 17.0118C14.1993 17.3244 13.7754 17.5 13.3333 17.5H4.16667C3.72464 17.5 3.30072 17.3244 2.98816 17.0118C2.67559 16.6993 2.5 16.2754 2.5 15.8333V6.66667C2.5 6.22464 2.67559 5.80072 2.98816 5.48816C3.30072 5.17559 3.72464 5 4.16667 5H9.16667" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+
+                              </Link>
+                              <button
+                                onClick={() => window.open(`/forms/${form.id}`, "_blank")}
+                                className="text-gray-500 hover:text-[#6d7cff] p-2"
+                                title="See live"
+                              >
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <g clip-path="url(#clip0_5017_1475)">
+                                    <path d="M17.645 5.67667C18.0856 5.23619 18.3332 4.63872 18.3333 4.01571C18.3333 3.3927 18.0859 2.79518 17.6454 2.35459C17.205 1.91399 16.6075 1.66643 15.9845 1.66635C15.3615 1.66627 14.764 1.91369 14.3234 2.35417L3.20169 13.4783C3.00821 13.6713 2.86512 13.9088 2.78503 14.17L1.68419 17.7967C1.66266 17.8687 1.66103 17.9453 1.67949 18.0182C1.69794 18.0911 1.73579 18.1577 1.78902 18.2108C1.84225 18.264 1.90888 18.3017 1.98183 18.3201C2.05477 18.3384 2.13133 18.3367 2.20336 18.315L5.83086 17.215C6.09183 17.1356 6.32934 16.9934 6.52253 16.8008L17.645 5.67667Z" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                    <path d="M12.5 4.16666L15.8333 7.49999" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                  </g>
+                                  <defs>
+                                    <clipPath id="clip0_5017_1475">
+                                      <rect width="20" height="20" fill="white" />
+                                    </clipPath>
+                                  </defs>
+                                </svg>
+
+                              </button>
+                              <button
+                                onClick={() => handleDeleteForm(form.id)}
+                                className="text-gray-500 hover:text-red-500 p-2"
+                                title="Delete"
+                              >
+                                <svg
+                                  width="24"
+                                  height="24"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M4 7H20"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M10 11V17"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M14 11V17"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M5 7L6 19C6 20.1046 6.89543 21 8 21H16C17.1046 21 18 20.1046 18 19L19 7"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                  <path
+                                    d="M9 7V4C9 3.44772 9.44772 3 10 3H14C14.5523 3 15 3.44772 15 4V7"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-
-            <div className="flex-shrink-0">
-              <Image
-                src="/hands-checklist.svg"
-                alt="Collection form illustration"
-                width={300}
-                height={300}
-                className="h-auto w-auto"
-              />
-            </div>
-          </div>
+          )}
         </div>
       )}
 
-      {/* New Form Modal */}
+      {/* Modals */}
       <NewFormModal isOpen={showNewFormModal} onClose={() => setShowNewFormModal(false)} />
-
-      {/* Share Form Modal */}
       <ShareFormModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
         formId={selectedForm?.id}
         formName={selectedForm?.name}
       />
+      <EmbedFormModal isOpen={showEmbedModal} onClose={() => setShowEmbedModal(false)} formId={selectedForm?.id} />
     </div>
   )
 }

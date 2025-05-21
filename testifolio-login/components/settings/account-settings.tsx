@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Camera, Loader2 } from "lucide-react"
 
@@ -17,7 +17,9 @@ export function AccountSettings() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -39,7 +41,7 @@ export function AccountSettings() {
 
         if (user) {
           // Get profile data from profiles table
-          const { data: profile, error } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+          const { data: profile, error } = await supabase.from("profiles").select("*").eq("user_id", user.id).single()
 
           if (profile) {
             setUser(user)
@@ -48,8 +50,8 @@ export function AccountSettings() {
               email: user.email || "",
               companyName: profile.company_name || user.user_metadata?.company || "",
               jobTitle: profile.job_title || user.user_metadata?.job_title || "",
-              bio: profile.bio || "",
-              website: profile.website || "",
+              bio: profile?.bio || "",
+              website: profile?.website || "",
               avatar: profile.avatar_url || user.user_metadata?.avatar_url || "",
             })
           } else {
@@ -86,6 +88,46 @@ export function AccountSettings() {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    setIsUploading(true)
+    try {
+      // Create a unique file name
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `avatars/${fileName}`
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage.from("profiles").upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // Get the public URL
+      const { data: publicURL } = supabase.storage.from("profiles").getPublicUrl(filePath)
+
+      if (publicURL) {
+        // Update the avatar URL in the form data
+        setFormData((prev) => ({ ...prev, avatar: publicURL.publicUrl }))
+
+        toast({
+          title: "Success",
+          description: "Avatar uploaded successfully",
+        })
+      }
+    } catch (error) {
+      console.error("Error uploading avatar:", error)
+      toast({
+        title: "Error",
+        description: "Failed to upload avatar",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSaving(true)
@@ -97,22 +139,22 @@ export function AccountSettings() {
           full_name: formData.fullName,
           company: formData.companyName,
           job_title: formData.jobTitle,
+          avatar_url: formData.avatar, // Also update avatar in auth metadata
         },
       })
 
       if (authError) throw authError
 
       // Update or insert profile data
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: user.id,
-        full_name: formData.fullName,
+      const { error: profileError } = await supabase.from("profiles").update({
+        full_name: formData.fullName, 
         company_name: formData.companyName,
         job_title: formData.jobTitle,
         bio: formData.bio,
         website: formData.website,
         avatar_url: formData.avatar,
         updated_at: new Date(),
-      })
+      }).eq("user_id", user.id)
 
       if (profileError) throw profileError
 
@@ -156,10 +198,13 @@ export function AccountSettings() {
             </div>
             <button
               type="button"
+              onClick={() => fileInputRef.current?.click()}
               className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full bg-[#7c5cff] text-white hover:bg-[#6a4ddb]"
+              disabled={isUploading}
             >
-              <Camera className="h-4 w-4" />
+              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             </button>
+            <input type="file" ref={fileInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" />
           </div>
           <div className="text-center">
             <p className="text-sm font-medium text-gray-900">{formData.fullName}</p>
@@ -240,7 +285,7 @@ export function AccountSettings() {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSaving}>
+            <Button type="submit" disabled={isSaving || isUploading}>
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
