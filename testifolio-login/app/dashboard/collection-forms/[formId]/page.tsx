@@ -8,7 +8,6 @@ import { supabase } from "@/lib/supabase"
 import { PreviewFormModal } from "@/components/forms/preview-form-modal"
 import { ShareFormModal } from "@/components/forms/share-form-modal"
 import { EmbedFormModal } from "@/components/forms/embed-form-modal"
-
 interface FormSettings {
   welcomeTitle?: string
   welcomeMessage?: string
@@ -456,7 +455,7 @@ export default function FormEditorPage() {
       {/* Top Navigation */}
       <header className="flex h-16 items-center justify-between border-b border-gray-200 bg-white px-4">
         <div className="flex items-center">
-          <Link href="/dashboard/collection-forms" className="mr-4 flex items-center text-gray-600 hover:text-gray-900">
+          <Link href="/dashboard/collection-forms"   className="inline-flex items-center gap-2 rounded-full border border-gray-400 px-5 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:border-gray-600 transition-colors mr-2">
             <ArrowLeft className="mr-2 h-5 w-5" />
             <span>Your forms</span>
           </Link>
@@ -516,9 +515,8 @@ export default function FormEditorPage() {
         <div className="w-60 border-r border-gray-200 bg-white">
           <div className="p-4">
             <button
-              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${
-                activeTab === "welcome" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${activeTab === "welcome" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
+                }`}
               onClick={() => handleTabChange("welcome")}
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -533,9 +531,8 @@ export default function FormEditorPage() {
               <span>Welcome</span>
             </button>
             <button
-              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${
-                activeTab === "testimonial" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${activeTab === "testimonial" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
+                }`}
               onClick={() => handleTabChange("testimonial")}
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -550,9 +547,8 @@ export default function FormEditorPage() {
               <span>Testimonial</span>
             </button>
             <button
-              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${
-                activeTab === "personal" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${activeTab === "personal" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
+                }`}
               onClick={() => handleTabChange("personal")}
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -568,9 +564,8 @@ export default function FormEditorPage() {
               <span>Personal Details</span>
             </button>
             <button
-              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${
-                activeTab === "thankyou" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${activeTab === "thankyou" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
+                }`}
               onClick={() => handleTabChange("thankyou")}
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -586,9 +581,8 @@ export default function FormEditorPage() {
               <span>Thank You</span>
             </button>
             <button
-              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${
-                activeTab === "design" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${activeTab === "design" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
+                }`}
               onClick={() => handleTabChange("design")}
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -603,9 +597,8 @@ export default function FormEditorPage() {
               <span>Design Settings</span>
             </button>
             <button
-              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${
-                activeTab === "settings" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
-              }`}
+              className={`mb-2 flex w-full items-center rounded-md px-3 py-2 text-left ${activeTab === "settings" ? "bg-[#f0eaff] text-[#7c5cff]" : "text-gray-700 hover:bg-gray-100"
+                }`}
               onClick={() => handleTabChange("settings")}
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1382,6 +1375,304 @@ export default function FormEditorPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Right Preview Panel - Added based on screenshots */}
+        <div className="hidden md:block w-[650px] bg-[#f2f4ff] p-6 border-l border-gray-200 overflow-auto">
+          <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
+            <div className="flex justify-center mb-6">
+              <div className="bg-gray-100 rounded-lg p-4 w-32 h-16 flex items-center justify-center">
+                <span className="text-gray-400 text-sm">YOUR LOGO</span>
+              </div>
+            </div>
+
+            {activeTab === "welcome" && (
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-4">
+                  {formSettings.welcomeTitle || "How would you like to leave your testimonial?"}
+                </h2>
+                <p className="text-gray-600 mb-8">
+                  {formSettings.welcomeMessage || "Choose to either leave a video or written testimonial! 😊"}
+                </p>
+
+                {formSettings.requireStarRating && (
+                  <div className="flex justify-center mb-8">
+                    <div className="flex space-x-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <svg
+                          key={star}
+                          className="w-8 h-8 text-gray-300"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                          />
+                        </svg>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <button className="w-full bg-[#6d7cff] text-white py-3 px-4 rounded-md flex items-center justify-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Record a Video
+                  </button>
+                  <button className="w-full bg-[#2d3340] text-white py-3 px-4 rounded-md">Write a Testimonial</button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "testimonial" && (
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-4">
+                  {formSettings.testimonialTitle || "Share your experience with us!"}
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  {formSettings.testimonialMessage ||
+                    "We'd really appreciate hearing your thoughts on your recent experience with our product, what you like about it, and why you'd recommend it. It means a lot to us!"}
+                </p>
+
+                <div className="bg-[#f3f4f6] rounded-lg p-4 mb-6">
+                  <textarea
+                    className="w-full bg-transparent border-none resize-none focus:ring-0 text-gray-700 placeholder-gray-500"
+                    rows={6}
+                    placeholder="Type your feedback here..."
+                  ></textarea>
+
+                  {formSettings.includeGuidedPrompts && formSettings.guidedPrompts && (
+                    <div className="mt-4 space-y-3 text-left">
+                      <p className="text-sm text-gray-500">
+                        {formSettings.guidedPrompts[0] || "What problem were you facing before?"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {formSettings.guidedPrompts[1] || "How did our solution help?"}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {formSettings.guidedPrompts[2] || "What specific results did you notice?"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {formSettings.allowImages && (
+                  <div className="mb-6 text-left">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Attach up to 3 image(s)</p>
+                    <button className="flex items-center text-[#6d7cff] text-sm">
+                      <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                      Attach and image
+                    </button>
+                  </div>
+                )}
+
+                {formSettings.allowAI && (
+                  <div className="mb-6">
+                    <button className="flex items-center justify-center w-full text-[#6d7cff] border border-[#6d7cff] rounded-md py-2 px-4">
+                      <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
+                      Refine with AI
+                    </button>
+                  </div>
+                )}
+
+                <button className="w-full bg-[#6d7cff] text-white py-3 px-4 rounded-md">Submit</button>
+              </div>
+            )}
+
+            {activeTab === "personal" && (
+              <div>
+                <h2 className="text-xl font-bold mb-4 text-center">
+                  {formSettings.personalTitle || "One last thing! 😎"}
+                </h2>
+                <p className="text-gray-600 mb-6 text-center">
+                  {formSettings.personalMessage ||
+                    "We would love to know who's behind this feedback. Please fill in the details below."}
+                </p>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
+                        placeholder="Enter your name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                      <input
+                        type="email"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
+                        placeholder="Enter your email"
+                      />
+                    </div>
+                  </div>
+
+                  {formSettings.collectFields?.includes("jobTitle") && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
+                        placeholder="Enter your job title"
+                      />
+                    </div>
+                  )}
+
+                  {formSettings.collectFields?.includes("company") && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                      <input
+                        type="text"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
+                        placeholder="Enter company name"
+                      />
+                    </div>
+                  )}
+
+                  {formSettings.collectFields?.includes("website") && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
+                      <input
+                        type="url"
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
+                        placeholder="Enter website URL"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-8">
+                  <button className="w-full bg-[#6d7cff] text-white py-3 px-4 rounded-md">Submit</button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "thankyou" && (
+              <div className="text-center">
+                <div className="flex justify-center mb-6">
+                  <div className="bg-green-100 rounded-full p-4">
+                    <svg className="w-12 h-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <h2 className="text-xl font-bold mb-4">
+                  {formSettings.thankYouTitle || "Thanks so much! We value your feedback."}
+                </h2>
+                <p className="text-gray-600 mb-8">
+                  {formSettings.thankYouMessage ||
+                    "We are always appreciative of the people who take the time to leave feedback. Your words always help improve our service to make sure we deliver!"}
+                </p>
+
+                {formSettings.includeCTA && (
+                  <button className="bg-[#6d7cff] text-white py-2 px-6 rounded-md">
+                    {formSettings.ctaText || "Visit our website"}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {activeTab === "design" && (
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-4" style={{ color: formSettings.primaryColor || "#7c5cff" }}>
+                  How would you like to leave us a testimonial?
+                </h2>
+                <p className="text-gray-600 mb-8">You can either write it out as text or record it as a video.</p>
+
+                <div className="flex justify-center mb-8">
+                  <div className="flex space-x-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        className="w-8 h-8"
+                        style={{ color: star <= 3 ? formSettings.primaryColor || "#7c5cff" : "#e5e7eb" }}
+                        fill="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <button
+                    className="w-full py-3 px-4 rounded-md flex items-center justify-center text-white"
+                    style={{ backgroundColor: formSettings.primaryColor || "#7c5cff" }}
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Record a Video
+                  </button>
+                  <button className="w-full bg-[#2d3340] text-white py-3 px-4 rounded-md">Write a Testimonial</button>
+                </div>
+              </div>
+            )}
+
+            {activeTab === "settings" && (
+              <div className="text-center">
+                <h2 className="text-xl font-bold mb-4">How would you like to leave us a testimonial?</h2>
+                <p className="text-gray-600 mb-8">You can either write it out as text or record it as a video.</p>
+
+                <div className="space-y-4">
+                  <button className="w-full bg-[#6d7cff] text-white py-3 px-4 rounded-md flex items-center justify-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Record a Video
+                  </button>
+                  <button className="w-full bg-[#2d3340] text-white py-3 px-4 rounded-md">Write a Testimonial</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="text-center">
+            <p className="text-xs text-gray-500">powered by</p>
+            <div className="flex justify-center mt-1">
+              <img src="/poweredby.svg"></img>
+            </div>
+          </div>
         </div>
       </div>
 

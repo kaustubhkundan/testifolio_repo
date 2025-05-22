@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -18,10 +18,12 @@ import {
   Home,
   Loader2,
   Pencil,
+  RefreshCw,
   Search,
   Share2,
   Star,
   X,
+  Upload,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
@@ -65,6 +67,11 @@ export default function TestimonialsPage() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateSuccess, setUpdateSuccess] = useState(false)
 
+  // Add these state variables inside the TestimonialsPage component
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   // Edit testimonial form state
   const [editForm, setEditForm] = useState({
     customerName: "",
@@ -76,6 +83,7 @@ export default function TestimonialsPage() {
     link: "",
     date: new Date().toISOString().split("T")[0],
     tags: "",
+    customerAvatar: "",
   })
   const [editFormErrors, setEditFormErrors] = useState<Record<string, string>>({})
 
@@ -89,16 +97,26 @@ export default function TestimonialsPage() {
     link: "",
     date: new Date().toISOString().split("T")[0],
     tags: "",
+    customerAvatar: "", // Add this line
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
 
+  // Add this state to store the last fetch time
+  const [lastFetchTime, setLastFetchTime] = useState<number | null>(null)
+
   // Fetch testimonials from Supabase
   useEffect(() => {
     const fetchTestimonials = async () => {
       if (!user) return
-      if (testimonials.length > 0 && !isLoading) return
+
+      // If we have testimonials and fetched recently (within last 5 minutes), don't fetch again
+      const now = Date.now()
+      if (testimonials.length > 0 && lastFetchTime && now - lastFetchTime < 5 * 60 * 1000) {
+        setIsLoading(false)
+        return
+      }
 
       try {
         setIsLoading(true)
@@ -133,6 +151,7 @@ export default function TestimonialsPage() {
 
           setTestimonials(formattedTestimonials)
           setShowImported(formattedTestimonials.length > 0)
+          setLastFetchTime(now)
         }
       } catch (err) {
         console.error("Error fetching testimonials:", err)
@@ -143,7 +162,7 @@ export default function TestimonialsPage() {
     }
 
     fetchTestimonials()
-  }, [user, supabase])
+  }, [user, supabase, testimonials.length, lastFetchTime])
 
   // Get random avatar for testimonials without one
   const getRandomAvatar = () => {
@@ -177,6 +196,7 @@ export default function TestimonialsPage() {
       link: "",
       date: new Date().toISOString().split("T")[0],
       tags: "",
+      customerAvatar: "",
     })
   }
 
@@ -246,6 +266,62 @@ export default function TestimonialsPage() {
     }))
   }
 
+  // Add this function inside the TestimonialsPage component
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+
+    try {
+      setUploadingImage(true)
+
+      // Create a preview of the image
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setPreviewImage(event.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+
+      // Upload to Supabase Storage
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `testimonial-avatars/${fileName}`
+
+      const { data, error } = await supabase.storage.from("testimonials").upload(filePath, file)
+
+      if (error) throw error
+
+      // Get the public URL
+      const { data: publicUrlData } = supabase.storage.from("testimonials").getPublicUrl(filePath)
+
+      const avatarUrl = publicUrlData.publicUrl
+
+      // Update the form state with the new avatar URL
+      if (isEdit) {
+        setEditForm((prev) => ({
+          ...prev,
+          customerAvatar: avatarUrl,
+        }))
+      } else {
+        setTextTestimonial((prev) => ({
+          ...prev,
+          customerAvatar: avatarUrl
+        }))
+      }
+    } catch (err) {
+      console.error("Error uploading image:", err)
+      alert("Failed to upload image. Please try again.")
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  // Add this function inside the TestimonialsPage component
+  const triggerFileInput = (isEdit = false) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
   // Set up edit form when a testimonial is selected for editing
   const handleEditClick = (testimonial: Testimonial) => {
     setEditingTestimonial(testimonial)
@@ -261,6 +337,7 @@ export default function TestimonialsPage() {
         ? new Date(testimonial.created_at).toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0],
       tags: "",
+      customerAvatar: testimonial.customer.avatar || "", // Add this line
     })
     setUpdateSuccess(false)
   }
@@ -343,6 +420,7 @@ export default function TestimonialsPage() {
             link: textTestimonial.link,
             tags: textTestimonial.tags,
             date: textTestimonial.date,
+            customer_avatar: textTestimonial.customerAvatar || null,
           },
         ])
         .select()
@@ -409,6 +487,7 @@ export default function TestimonialsPage() {
           link: editForm.link,
           tags: editForm.tags,
           date: editForm.date,
+          customer_avatar: editForm.customerAvatar || null,
         })
         .eq("id", editingTestimonial.id)
         .eq("user_id", user.id)
@@ -474,23 +553,40 @@ export default function TestimonialsPage() {
     )
   }
 
+  // Add this function after the other handler functions
+  const handleManualRefresh = () => {
+    setLastFetchTime(null)
+  }
+
   return (
     <>
       <div className="flex items-center justify-between p-4 md:hidden bg-[#f2f4ff]">
-        {/* <button className="text-[#6d7cff]">
+        <button className="text-[#6d7cff]">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M3 12H21" stroke="#6d7cff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M3 6H21" stroke="#6d7cff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M3 18H21" stroke="#6d7cff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </button> */}
-        {/* <div className="flex items-center">
+        </button>
+        <div className="flex items-center">
           <span className="text-xl font-bold text-[#6d7cff]">testifolio</span>
           <div className="ml-1 h-5 w-5 rounded-full bg-[#6d7cff] flex items-center justify-center text-white text-xs font-bold">
             2
           </div>
-        </div> */}
-  
+        </div>
+        <div className="flex items-center">
+          <div className="relative">
+            <Image
+              src="/professional-headshot.png"
+              alt="User"
+              width={40}
+              height={40}
+              className="rounded-full border-2 border-white"
+            />
+          </div>
+          <span className="ml-2 font-medium">Harsh</span>
+          <ChevronDown className="ml-1 h-4 w-4" />
+        </div>
       </div>
       <div className="p-6 bg-[#f2f4ff] md:bg-white">
         {/* Page Title */}
@@ -571,6 +667,12 @@ export default function TestimonialsPage() {
                     </div>
                   </div>
                 </div>
+                <button
+                  className="flex items-center gap-1 rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                  onClick={handleManualRefresh}
+                >
+                  <RefreshCw className="h-4 w-4" /> Refresh
+                </button>
                 <button
                   className="flex items-center gap-1 rounded-md bg-[#a5b4fc] px-4 py-2 text-sm font-medium text-white hover:bg-[#818cf8]"
                   onClick={handleImportClick}
@@ -1024,27 +1126,56 @@ export default function TestimonialsPage() {
                         <div>
                           <label className="mb-1 block text-sm font-medium text-gray-700">Profile Picture</label>
                           <div className="flex items-center gap-3">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-gray-300 bg-gray-50">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-6 w-6 text-gray-400"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-gray-300 bg-gray-50 overflow-hidden">
+                              {previewImage ? (
+                                <Image
+                                  src={previewImage || "/placeholder.svg"}
+                                  alt="Profile preview"
+                                  width={64}
+                                  height={64}
+                                  className="object-cover w-full h-full"
                                 />
-                              </svg>
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-6 w-6 text-gray-400"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                  />
+                                </svg>
+                              )}
                             </div>
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) => handleImageUpload(e, false)}
+                            />
                             <button
                               type="button"
-                              className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                              onClick={() => triggerFileInput(false)}
+                              disabled={uploadingImage}
+                              className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-70 flex items-center gap-2"
                             >
-                              Pick an Image
+                              {uploadingImage ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <span>Uploading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="h-4 w-4" />
+                                  <span>Pick an Image</span>
+                                </>
+                              )}
                             </button>
                           </div>
                         </div>
@@ -1505,8 +1636,16 @@ export default function TestimonialsPage() {
                       <div>
                         <label className="mb-1 block text-sm font-medium text-gray-700">Profile Picture</label>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-gray-300 bg-gray-50">
-                            {editingTestimonial.customer.avatar ? (
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-gray-300 bg-gray-50 overflow-hidden">
+                            {previewImage ? (
+                              <Image
+                                src={previewImage || "/placeholder.svg"}
+                                alt="Profile preview"
+                                width={64}
+                                height={64}
+                                className="object-cover w-full h-full"
+                              />
+                            ) : editingTestimonial?.customer.avatar ? (
                               <div className="relative h-16 w-16 overflow-hidden rounded-full">
                                 <Image
                                   src={editingTestimonial.customer.avatar || "/placeholder.svg"}
@@ -1532,11 +1671,30 @@ export default function TestimonialsPage() {
                               </svg>
                             )}
                           </div>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => handleImageUpload(e, true)}
+                          />
                           <button
                             type="button"
-                            className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                            onClick={() => triggerFileInput(true)}
+                            disabled={uploadingImage}
+                            className="rounded-md bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-70 flex items-center gap-2"
                           >
-                            Pick an Image
+                            {uploadingImage ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Uploading...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4" />
+                                <span>Pick an Image</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>

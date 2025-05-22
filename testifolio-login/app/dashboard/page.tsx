@@ -435,7 +435,7 @@ export default function DashboardPage() {
                           <td className="whitespace-nowrap px-6 py-4">{testimonial.engagement}</td>
                           <td className="whitespace-nowrap px-6 py-4">{testimonial.ai_score}</td>
                           <td className="whitespace-nowrap px-6 py-4">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2" onClick={() => window.open("/dashboard/testimonials", "_self")}>
                               <button className="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200">
                                 <Eye className="h-4 w-4" />
                               </button>

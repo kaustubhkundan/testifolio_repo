@@ -10,6 +10,7 @@ import { NewFormModal } from "@/components/forms/new-form-modal"
 import { ShareFormModal } from "@/components/forms/share-form-modal"
 import { EmbedFormModal } from "@/components/forms/embed-form-modal"
 import { supabase } from "@/lib/supabase"
+import { PreviewFormModal } from "@/components/forms/preview-form-modal"
 
 type Form = {
   id: string
@@ -28,6 +29,8 @@ export default function CollectionFormsPage() {
   const [showNewFormModal, setShowNewFormModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
   const [showEmbedModal, setShowEmbedModal] = useState(false)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
+
   const [selectedForm, setSelectedForm] = useState<{ id: string; name: string } | null>(null)
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -130,6 +133,12 @@ export default function CollectionFormsPage() {
   const handleEmbedClick = (form: { id: string; name: string }) => {
     setSelectedForm(form)
     setShowEmbedModal(true)
+    setActiveMenuId(null)
+  }
+
+  const handlePreviewModal = (form: { id: string; name: string }) => {
+    setSelectedForm(form)
+    setShowPreviewModal(true)
     setActiveMenuId(null)
   }
 
@@ -435,7 +444,7 @@ export default function CollectionFormsPage() {
                                   Duplicate form
                                 </button>
                                 <button
-                                  onClick={() => window.open(`/forms/${form.id}`, "_blank")}
+                                  onClick={() => handlePreviewModal(form)}
                                   className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 >
                                   <svg
@@ -454,7 +463,7 @@ export default function CollectionFormsPage() {
                                       strokeLinejoin="round"
                                     />
                                   </svg>
-                                  See live
+                                  See Live
                                 </button>
                               </div>
                             </div>
@@ -495,7 +504,7 @@ export default function CollectionFormsPage() {
                                       Duplicate form
                                     </button>
                                     <button
-                                      onClick={() => window.open(`/forms/${form.id}`, "_blank")}
+                                      onClick={() => handlePreviewModal(form)}
                                       className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     >
                                       <Eye className="h-4 w-4 mr-3 text-gray-500" />
@@ -564,10 +573,10 @@ export default function CollectionFormsPage() {
                                 </svg>
 
                               </button>
-                              <Link
-                                href={`/dashboard/collection-forms/${form.id}`}
+                              <button
+                                onClick={() => handlePreviewModal(form)}
                                 className="text-gray-500 hover:text-[#6d7cff] p-2"
-                                title="Edit"
+                                title="See Live"
                               >
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M12.5 2.5H17.5V7.5" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -575,11 +584,11 @@ export default function CollectionFormsPage() {
                                   <path d="M15 10.8333V15.8333C15 16.2754 14.8244 16.6993 14.5118 17.0118C14.1993 17.3244 13.7754 17.5 13.3333 17.5H4.16667C3.72464 17.5 3.30072 17.3244 2.98816 17.0118C2.67559 16.6993 2.5 16.2754 2.5 15.8333V6.66667C2.5 6.22464 2.67559 5.80072 2.98816 5.48816C3.30072 5.17559 3.72464 5 4.16667 5H9.16667" stroke="#667085" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                                 </svg>
 
-                              </Link>
-                              <button
-                                onClick={() => window.open(`/forms/${form.id}`, "_blank")}
+                              </button>
+                              <Link
+                                href={`/dashboard/collection-forms/${form.id}`}
                                 className="text-gray-500 hover:text-[#6d7cff] p-2"
-                                title="See live"
+                                title="Edit"
                               >
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <g clip-path="url(#clip0_5017_1475)">
@@ -593,7 +602,7 @@ export default function CollectionFormsPage() {
                                   </defs>
                                 </svg>
 
-                              </button>
+                              </Link>
                               <button
                                 onClick={() => handleDeleteForm(form.id)}
                                 className="text-gray-500 hover:text-red-500 p-2"
@@ -665,6 +674,8 @@ export default function CollectionFormsPage() {
         formName={selectedForm?.name}
       />
       <EmbedFormModal isOpen={showEmbedModal} onClose={() => setShowEmbedModal(false)} formId={selectedForm?.id} />
+      <PreviewFormModal isOpen={showPreviewModal} onClose={() => setShowPreviewModal(false)} formId={selectedForm?.id} />
+
     </div>
   )
 }
