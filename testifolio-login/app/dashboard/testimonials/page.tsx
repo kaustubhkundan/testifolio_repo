@@ -24,6 +24,7 @@ import {
   Star,
   X,
   Upload,
+  Eye,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
@@ -757,7 +758,7 @@ export default function TestimonialsPage() {
                               onClick={() => setViewingTestimonial(testimonial)}
                               className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-500"
                             >
-                              <FileText className="h-5 w-5" />
+                              <Eye className="h-5 w-5" />
                             </button>
                             <button
                               onClick={() => handleEditClick(testimonial)}
@@ -958,7 +959,7 @@ export default function TestimonialsPage() {
               </div>
             </div>
           </div>
-        )}
+        )} 
 
         {/* Import Modal */}
         {showImportModal && (
@@ -1867,7 +1868,7 @@ export default function TestimonialsPage() {
                   <input
                     type="text"
                     id="share-link"
-                    value={`https://testifolio.com/t/${shareTestimonial.id}`}
+                    value={`https://testifolio-repo.vercel.app/t/${shareTestimonial.id}`}
                     readOnly
                     className="w-full rounded-l-md border border-gray-300 px-3 py-2 text-sm focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]"
                   />
