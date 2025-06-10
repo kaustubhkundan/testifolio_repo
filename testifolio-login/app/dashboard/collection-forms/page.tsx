@@ -286,37 +286,27 @@ export default function CollectionFormsPage() {
       ) : (
         <div className="bg-white rounded-lg p-6 shadow-sm">
           {/* Create Form Button */}
-          <button
-            onClick={() => setShowNewFormModal(true)}
-            className="bg-gradient-to-r from-[#a5b4fc] to-[#818cf8] text-white px-6 py-3 rounded-lg mb-8 flex items-center justify-center"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            <span>Create a New Form</span>
-          </button>
+       
 
           {forms.length === 0 ? (
             // Empty state
             <div className="flex flex-col items-center justify-center py-12">
               <div className="mb-6">
                 <Image
-                  src="/forms-and-documents.png"
+                  src="/collection1.svg"
                   alt="No forms"
                   width={200}
                   height={200}
                   className="h-auto w-auto"
                 />
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">No forms yet</h3>
-              <p className="text-gray-600 text-center mb-6 max-w-md">
-                Create your first form to start collecting testimonials from your customers.
-              </p>
               <button
-                onClick={() => setShowNewFormModal(true)}
-                className="bg-[#6d7cff] text-white px-4 py-2 rounded-md hover:bg-[#5a69ff]"
-              >
-                <Plus className="h-4 w-4 inline-block mr-2" />
-                <span>Create Your First Form</span>
-              </button>
+            onClick={() => setShowNewFormModal(true)}
+            className="bg-gradient-to-r from-[#a5b4fc] to-[#818cf8] text-white px-6 py-3 rounded-lg mb-8 flex items-center justify-center"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            <span>Create a New Form</span>
+          </button>
             </div>
           ) : (
             // Forms list
