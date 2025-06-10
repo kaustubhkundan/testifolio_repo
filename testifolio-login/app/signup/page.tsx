@@ -28,7 +28,7 @@ export default function SignupPage() {
         setError(error.message)
       } else {
         // Redirect to the first step of onboarding
-        router.push("/business-details")
+        router.push("/login")
       }
     } catch (err) {
       setError("An unexpected error occurred")
