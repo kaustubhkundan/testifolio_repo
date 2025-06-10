@@ -63,7 +63,7 @@ export default function FormEditorPage() {
 
   // Form settings state
   const [formSettings, setFormSettings] = useState<FormSettings>({
-    welcomeTitle: "Welcome 👋",
+    welcomeTitle: "How would you like to leave a Testimonial?",
     welcomeMessage: "Choose to either leave a video or written testimonial! 😊",
     requireStarRating: true,
     collectionType: "Text and video testimonials",
@@ -164,12 +164,38 @@ export default function FormEditorPage() {
     try {
       setSaving(true)
       const { error } = await supabase
-        .from("collection_forms")
-        .update({
-          settings: formSettings,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", formId)
+      .from("collection_forms")
+      .update({
+        settings: formSettings,
+        welcome_title: formSettings.welcomeTitle,
+        welcome_message: formSettings.welcomeMessage,
+        require_star_rating: formSettings.requireStarRating,
+        collection_type: formSettings.collectionType,
+        testimonial_title: formSettings.testimonialTitle,
+        testimonial_message: formSettings.testimonialMessage,
+        include_guided_prompts: formSettings.includeGuidedPrompts,
+        allow_images: formSettings.allowImages,
+        allow_ai_enhancement: formSettings.allowAI,
+        personal_details_title: formSettings.personalTitle,
+        personal_details_message: formSettings.personalMessage,
+        collect_job_title: formSettings?.collectFields.includes("jobTitle"),
+        collect_company: formSettings?.collectFields.includes("company"),
+        collect_website: formSettings?.collectFields.includes("website"),
+        collect_profile_image: false, // not present in formSettings
+        thank_you_title: formSettings.thankYouTitle,
+        thank_you_message: formSettings.thankYouMessage,
+        include_call_to_action: formSettings.ratingBasedThankYou,
+        cta_text: "", // assuming not handled in formSettings
+        cta_url: "", // assuming not handled in formSettings
+        theme_color: formSettings.primaryColor,
+        logo_url: formSettings.customLogo ? "CUSTOM_LOGO_URL" : "", // if dynamic, replace accordingly
+        background_color: formSettings.customBackground ? "CUSTOM_BACKGROUND_COLOR" : "", // if dynamic, replace accordingly
+        font_family: formSettings.fontFamily,
+        is_active: formSettings.formStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", formId);
+    
 
       if (error) {
         console.error("Error saving form:", error)
@@ -179,6 +205,7 @@ export default function FormEditorPage() {
       // Update local form data
       setFormData((prev) => {
         if (!prev) return null
+        console.log("prev===",prev)
         return {
           ...prev,
           settings: formSettings,

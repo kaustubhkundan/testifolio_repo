@@ -28,6 +28,8 @@ import {
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { supabase } from "@/lib/supabase"
+import { GoogleImportModal } from "@/components/google-import-modal"
+import { FacebookImportModal } from "@/components/facebook-import-modal"
 
 // Define types
 type TestimonialStatus = "Approved" | "Pending" | "Published"
@@ -47,6 +49,7 @@ interface Testimonial {
   status: TestimonialStatus
   rating?: number
   created_at?: string
+  attachments?: string[]
 }
 
 export default function TestimonialsPage() {
@@ -61,6 +64,10 @@ export default function TestimonialsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Add state for Google and Facebook import modals
+  const [showGoogleImportModal, setShowGoogleImportModal] = useState(false)
+  const [showFacebookImportModal, setShowFacebookImportModal] = useState(false)
+
   // Add state variables for viewing, editing, and sharing testimonials
   const [viewingTestimonial, setViewingTestimonial] = useState<Testimonial | null>(null)
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null)
@@ -72,6 +79,16 @@ export default function TestimonialsPage() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Add state for multiple attachments
+  const [uploadingAttachments, setUploadingAttachments] = useState(false)
+  const [attachmentPreviews, setAttachmentPreviews] = useState<string[]>([])
+  const [attachmentFiles, setAttachmentFiles] = useState<File[]>([])
+  const attachmentInputRef = useRef<HTMLInputElement>(null)
+
+  // Edit form attachment state
+  const [editAttachmentPreviews, setEditAttachmentPreviews] = useState<string[]>([])
+  const [editAttachmentFiles, setEditAttachmentFiles] = useState<File[]>([])
 
   // Edit testimonial form state
   const [editForm, setEditForm] = useState({
@@ -85,6 +102,7 @@ export default function TestimonialsPage() {
     date: new Date().toISOString().split("T")[0],
     tags: "",
     customerAvatar: "",
+    attachments: [] as string[],
   })
   const [editFormErrors, setEditFormErrors] = useState<Record<string, string>>({})
 
@@ -98,7 +116,8 @@ export default function TestimonialsPage() {
     link: "",
     date: new Date().toISOString().split("T")[0],
     tags: "",
-    customerAvatar: "", // Add this line
+    customerAvatar: "",
+    attachments: [] as string[],
   })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -148,6 +167,7 @@ export default function TestimonialsPage() {
             status: item.status as TestimonialStatus,
             rating: item.rating,
             created_at: item.created_at,
+            attachments: item.attachments ? JSON.parse(item.attachments) : [],
           }))
 
           setTestimonials(formattedTestimonials)
@@ -188,6 +208,8 @@ export default function TestimonialsPage() {
     setSelectedSource(null)
     setSubmitSuccess(false)
     setFormErrors({})
+    setAttachmentPreviews([])
+    setAttachmentFiles([])
     setTextTestimonial({
       customerName: "",
       customerCompany: "",
@@ -198,21 +220,72 @@ export default function TestimonialsPage() {
       date: new Date().toISOString().split("T")[0],
       tags: "",
       customerAvatar: "",
+      attachments: [],
     })
   }
 
-  const handleSourceSelect = (sourceId: string) => {
+  const handleSourceSelect = async (sourceId: string) => {
     if (sourceId === "text") {
       setSelectedSource(sourceId)
+    } else if (sourceId === "google") {
+      // Check if Google integration exists
+      if (user) {
+        const { data } = await supabase
+          .from("user_integrations")
+          .select("access_token, expires_at")
+          .eq("user_id", user.id)
+          .eq("provider", "google")
+          .single()
+
+        if (!data || (data.expires_at && new Date(data.expires_at) <= new Date())) {
+          // No integration or expired - show integration pending
+          setShowImportModal(false)
+          setShowGoogleImportModal(true)
+        } else {
+          // Integration exists - proceed with import
+          setShowImportModal(false)
+          setShowGoogleImportModal(true)
+        }
+      }
+    } else if (sourceId === "facebook") {
+      // Check if Facebook integration exists
+      if (user) {
+        const { data } = await supabase
+          .from("user_integrations")
+          .select("access_token, page_access_token")
+          .eq("user_id", user.id)
+          .eq("provider", "facebook")
+          .single()
+
+        if (!data || (!data.access_token && !data.page_access_token)) {
+          // No integration - show integration pending
+          setShowImportModal(false)
+          setShowFacebookImportModal(true)
+        } else {
+          // Integration exists - proceed with import
+          setShowImportModal(false)
+          setShowFacebookImportModal(true)
+        }
+      }
     } else {
       // Show a message that only text testimonials are available now
-      alert("Coming soon! Currently only Text Testimonial import is available.")
+      alert("Coming soon! Currently only Text, Google, and Facebook testimonial imports are available.")
     }
   }
 
   const handleBackToSources = () => {
     setSelectedSource(null)
     setSubmitSuccess(false)
+  }
+
+  // Handle successful import from Google or Facebook
+  const handleImportSuccess = () => {
+    // Refresh testimonials
+    setLastFetchTime(null)
+    // Close any open modals
+    setShowGoogleImportModal(false)
+    setShowFacebookImportModal(false)
+    setShowImportModal(false)
   }
 
   // Handle text testimonial form input changes
@@ -305,7 +378,7 @@ export default function TestimonialsPage() {
       } else {
         setTextTestimonial((prev) => ({
           ...prev,
-          customerAvatar: avatarUrl
+          customerAvatar: avatarUrl,
         }))
       }
     } catch (err) {
@@ -316,10 +389,102 @@ export default function TestimonialsPage() {
     }
   }
 
+  // Handle multiple attachment uploads
+  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit = false) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0 || !user) return
+
+    // Check if adding these files would exceed the limit
+    const currentCount = isEdit ? editAttachmentPreviews.length : attachmentPreviews.length
+    const totalCount = currentCount + files.length
+
+    if (totalCount > 3) {
+      alert(`You can only upload up to 3 images. You currently have ${currentCount} image(s).`)
+      return
+    }
+
+    try {
+      setUploadingAttachments(true)
+
+      const uploadPromises = files.map(async (file) => {
+        // Create preview
+        const reader = new FileReader()
+        const previewPromise = new Promise<string>((resolve) => {
+          reader.onload = (event) => resolve(event.target?.result as string)
+          reader.readAsDataURL(file)
+        })
+
+        // Upload to Supabase Storage
+        const fileExt = file.name.split(".").pop()
+        const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`
+        const filePath = `testimonial-attachments/${fileName}`
+
+        const { data, error } = await supabase.storage.from("testimonials").upload(filePath, file)
+
+        if (error) throw error
+
+        // Get the public URL
+        const { data: publicUrlData } = supabase.storage.from("testimonials").getPublicUrl(filePath)
+
+        const preview = await previewPromise
+        return {
+          url: publicUrlData.publicUrl,
+          preview,
+        }
+      })
+
+      const results = await Promise.all(uploadPromises)
+
+      // Update the form state with the new attachment URLs
+      if (isEdit) {
+        setEditAttachmentPreviews((prev) => [...prev, ...results.map((r) => r.preview)])
+        setEditForm((prev) => ({
+          ...prev,
+          attachments: [...prev.attachments, ...results.map((r) => r.url)],
+        }))
+      } else {
+        setAttachmentPreviews((prev) => [...prev, ...results.map((r) => r.preview)])
+        setTextTestimonial((prev) => ({
+          ...prev,
+          attachments: [...prev.attachments, ...results.map((r) => r.url)],
+        }))
+      }
+    } catch (err) {
+      console.error("Error uploading attachments:", err)
+      alert("Failed to upload images. Please try again.")
+    } finally {
+      setUploadingAttachments(false)
+    }
+  }
+
+  // Remove attachment
+  const removeAttachment = (index: number, isEdit = false) => {
+    if (isEdit) {
+      setEditAttachmentPreviews((prev) => prev.filter((_, i) => i !== index))
+      setEditForm((prev) => ({
+        ...prev,
+        attachments: prev.attachments.filter((_, i) => i !== index),
+      }))
+    } else {
+      setAttachmentPreviews((prev) => prev.filter((_, i) => i !== index))
+      setTextTestimonial((prev) => ({
+        ...prev,
+        attachments: prev.attachments.filter((_, i) => i !== index),
+      }))
+    }
+  }
+
   // Add this function inside the TestimonialsPage component
   const triggerFileInput = (isEdit = false) => {
     if (fileInputRef.current) {
       fileInputRef.current.click()
+    }
+  }
+
+  // Trigger attachment file input
+  const triggerAttachmentInput = (isEdit = false) => {
+    if (attachmentInputRef.current) {
+      attachmentInputRef.current.click()
     }
   }
 
@@ -338,8 +503,10 @@ export default function TestimonialsPage() {
         ? new Date(testimonial.created_at).toISOString().split("T")[0]
         : new Date().toISOString().split("T")[0],
       tags: "",
-      customerAvatar: testimonial.customer.avatar || "", // Add this line
+      customerAvatar: testimonial.customer.avatar || "",
+      attachments: testimonial.attachments || [],
     })
+    setEditAttachmentPreviews(testimonial?.attachments || [])
     setUpdateSuccess(false)
   }
 
@@ -422,6 +589,7 @@ export default function TestimonialsPage() {
             tags: textTestimonial.tags,
             date: textTestimonial.date,
             customer_avatar: textTestimonial.customerAvatar || null,
+            attachments: JSON.stringify(textTestimonial.attachments),
           },
         ])
         .select()
@@ -435,7 +603,7 @@ export default function TestimonialsPage() {
           customer: {
             name: data[0].customer_name,
             company: data[0].customer_company,
-            avatar: getRandomAvatar(),
+            avatar: data[0].customer_avatar || getRandomAvatar(),
           },
           text: data[0].testimonial_text,
           type: "Written Testimonials",
@@ -443,6 +611,7 @@ export default function TestimonialsPage() {
           status: "Pending",
           rating: data[0].rating,
           created_at: data[0].created_at,
+          attachments: data[0].attachments ? JSON.parse(data[0].attachments) : [],
         }
 
         setTestimonials((prev) => [newTestimonial, ...prev])
@@ -489,6 +658,7 @@ export default function TestimonialsPage() {
           tags: editForm.tags,
           date: editForm.date,
           customer_avatar: editForm.customerAvatar || null,
+          attachments: JSON.stringify(editForm.attachments),
         })
         .eq("id", editingTestimonial.id)
         .eq("user_id", user.id)
@@ -504,10 +674,12 @@ export default function TestimonialsPage() {
               ...t.customer,
               name: editForm.customerName,
               company: editForm.customerCompany,
+              avatar: editForm.customerAvatar || t.customer.avatar,
             },
             text: editForm.testimonialText,
             rating: editForm.rating,
             status: editForm.status,
+            attachments: editForm.attachments,
           }
         }
         return t
@@ -532,9 +704,9 @@ export default function TestimonialsPage() {
 
   const importSources = [
     { id: "text", name: "Text Testimonial", logo: "/text-testimonial-icon.png", isReady: true },
-    { id: "google", name: "Google", logo: "/google-icon.png", isReady: false },
+    { id: "google", name: "Google", logo: "/google-icon.png", isReady: true },
     { id: "yelp", name: "Yelp", logo: "/yelp-icon.png", isReady: false },
-    { id: "facebook", name: "Facebook", logo: "/facebook-icon.png", isReady: false },
+    { id: "facebook", name: "Facebook", logo: "/facebook-icon.png", isReady: true },
     { id: "trustpilot", name: "Trustpilot", logo: "/trustpilot-icon.png", isReady: false },
     { id: "amazon", name: "Amazon", logo: "/amazon-icon.png", isReady: false },
   ]
@@ -732,22 +904,20 @@ export default function TestimonialsPage() {
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
                           <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              testimonial.status === "Approved"
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${testimonial.status === "Approved"
                                 ? "bg-green-100 text-green-800"
                                 : testimonial.status === "Pending"
                                   ? "bg-yellow-100 text-yellow-800"
                                   : "bg-blue-100 text-blue-800"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                                testimonial.status === "Approved"
+                              className={`mr-1.5 h-1.5 w-1.5 rounded-full ${testimonial.status === "Approved"
                                   ? "bg-green-400"
                                   : testimonial.status === "Pending"
                                     ? "bg-yellow-400"
                                     : "bg-blue-400"
-                              }`}
+                                }`}
                             ></span>
                             {testimonial.status}
                           </span>
@@ -823,22 +993,20 @@ export default function TestimonialsPage() {
                         <div className="flex justify-between">
                           <div className="text-gray-500">Status:</div>
                           <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                              testimonial.status === "Approved"
+                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${testimonial.status === "Approved"
                                 ? "bg-green-100 text-green-800"
                                 : testimonial.status === "Pending"
                                   ? "bg-yellow-100 text-yellow-800"
                                   : "bg-blue-100 text-blue-800"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                                testimonial.status === "Approved"
+                              className={`mr-1.5 h-1.5 w-1.5 rounded-full ${testimonial.status === "Approved"
                                   ? "bg-green-400"
                                   : testimonial.status === "Pending"
                                     ? "bg-yellow-400"
                                     : "bg-blue-400"
-                              }`}
+                                }`}
                             ></span>
                             {testimonial.status}
                           </span>
@@ -847,6 +1015,30 @@ export default function TestimonialsPage() {
                           <div className="text-gray-500 mb-1">Testimonial:</div>
                           <div className="text-gray-700">{testimonial.text}</div>
                         </div>
+
+                        {/* Display attachments in mobile view */}
+                        {testimonial.attachments && testimonial.attachments.length > 0 && (
+                          <div className="mb-4">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Attachments</h4>
+                            <div className="grid grid-cols-3 gap-2">
+                              {testimonial.attachments.map((attachment, index) => (
+                                <div
+                                  key={index}
+                                  className="aspect-square rounded-lg border border-gray-300 overflow-hidden"
+                                >
+                                  <Image
+                                    src={attachment || "/placeholder.svg"}
+                                    alt={`Attachment ${index + 1}`}
+                                    width={100}
+                                    height={100}
+                                    className="object-cover w-full h-full"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <div className="flex justify-between items-center pt-2">
                           <div className="text-gray-500">Action:</div>
                           <div className="flex space-x-3">
@@ -959,7 +1151,7 @@ export default function TestimonialsPage() {
               </div>
             </div>
           </div>
-        )} 
+        )}
 
         {/* Import Modal */}
         {showImportModal && (
@@ -1055,9 +1247,8 @@ export default function TestimonialsPage() {
                           name="customerName"
                           value={textTestimonial.customerName}
                           onChange={handleTextTestimonialChange}
-                          className={`w-full rounded-md border ${
-                            formErrors.customerName ? "border-red-300" : "border-gray-300"
-                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                          className={`w-full rounded-md border ${formErrors.customerName ? "border-red-300" : "border-gray-300"
+                            } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
                           placeholder="John Smith"
                         />
                         {formErrors.customerName && (
@@ -1075,9 +1266,8 @@ export default function TestimonialsPage() {
                           name="customerCompany"
                           value={textTestimonial.customerCompany}
                           onChange={handleTextTestimonialChange}
-                          className={`w-full rounded-md border ${
-                            formErrors.customerCompany ? "border-red-300" : "border-gray-300"
-                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                          className={`w-full rounded-md border ${formErrors.customerCompany ? "border-red-300" : "border-gray-300"
+                            } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
                           placeholder="Co-Founder & CTO at Testifolio"
                         />
                         {formErrors.customerCompany && (
@@ -1095,9 +1285,8 @@ export default function TestimonialsPage() {
                           name="email"
                           value={textTestimonial.email}
                           onChange={handleTextTestimonialChange}
-                          className={`w-full rounded-md border ${
-                            formErrors.email ? "border-red-300" : "border-gray-300"
-                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                          className={`w-full rounded-md border ${formErrors.email ? "border-red-300" : "border-gray-300"
+                            } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
                           placeholder="email@example.com"
                         />
                         {formErrors.email && <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>}
@@ -1192,9 +1381,8 @@ export default function TestimonialsPage() {
                           value={textTestimonial.testimonialText}
                           onChange={handleTextTestimonialChange}
                           rows={4}
-                          className={`w-full rounded-md border ${
-                            formErrors.testimonialText ? "border-red-300" : "border-gray-300"
-                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                          className={`w-full rounded-md border ${formErrors.testimonialText ? "border-red-300" : "border-gray-300"
+                            } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
                           placeholder="Enter the testimonial text here..."
                         ></textarea>
                         {formErrors.testimonialText && (
@@ -1218,13 +1406,69 @@ export default function TestimonialsPage() {
                       </div>
 
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-gray-700">Attach upto 3 Images</label>
-                        <div className="flex h-32 w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-blue-300 bg-gray-50 hover:bg-gray-100">
-                          <div className="text-center">
-                            <p className="text-sm font-medium text-blue-600">Click to Upload</p>
-                            <p className="text-xs text-gray-500">or drag and drop</p>
-                            <p className="text-xs text-gray-500">(Max. File size: 25 MB)</p>
-                          </div>
+                        <label className="mb-1 block text-sm font-medium text-gray-700">Attach up to 3 Images</label>
+                        <div className="space-y-3">
+                          {/* Attachment Previews */}
+                          {attachmentPreviews.length > 0 && (
+                            <div className="grid grid-cols-3 gap-3">
+                              {attachmentPreviews.map((preview, index) => (
+                                <div key={index} className="relative">
+                                  <div className="aspect-square rounded-lg border border-gray-300 overflow-hidden">
+                                    <Image
+                                      src={preview || "/placeholder.svg"}
+                                      alt={`Attachment ${index + 1}`}
+                                      width={100}
+                                      height={100}
+                                      className="object-cover w-full h-full"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAttachment(index, false)}
+                                    className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Upload Area */}
+                          {attachmentPreviews?.length < 3 && (
+                            <div
+                              onClick={() => triggerAttachmentInput(false)}
+                              className="flex h-32 w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-blue-300 bg-gray-50 hover:bg-gray-100"
+                            >
+                              <div className="text-center">
+                                {uploadingAttachments ? (
+                                  <div className="flex flex-col items-center">
+                                    <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
+                                    <p className="text-sm font-medium text-blue-600">Uploading...</p>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Upload className="mx-auto h-8 w-8 text-blue-600 mb-2" />
+                                    <p className="text-sm font-medium text-blue-600">Click to Upload Images</p>
+                                    <p className="text-xs text-gray-500">or drag and drop</p>
+                                    <p className="text-xs text-gray-500">(Max. File size: 25 MB each)</p>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {attachmentPreviews.length}/3 images uploaded
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          <input
+                            type="file"
+                            ref={attachmentInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => handleAttachmentUpload(e, false)}
+                          />
                         </div>
                       </div>
 
@@ -1328,9 +1572,8 @@ export default function TestimonialsPage() {
                     {importSources.map((source) => (
                       <button
                         key={source.id}
-                        className={`flex items-center justify-between rounded-md border ${
-                          source.isReady ? "border-gray-200" : "border-gray-200 opacity-70"
-                        } p-4 hover:border-[#a5b4fc] hover:bg-[#f8f7ff]`}
+                        className={`flex items-center justify-between rounded-md border ${source.isReady ? "border-gray-200" : "border-gray-200 opacity-70"
+                          } p-4 hover:border-[#a5b4fc] hover:bg-[#f8f7ff]`}
                         onClick={() => handleSourceSelect(source.id)}
                       >
                         <div className="flex items-center">
@@ -1376,9 +1619,8 @@ export default function TestimonialsPage() {
                           <span className="font-medium">{source.name}</span>
                         </div>
                         <span
-                          className={`rounded-full px-2 py-1 text-xs ${
-                            source.isReady ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
-                          }`}
+                          className={`rounded-full px-2 py-1 text-xs ${source.isReady ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+                            }`}
                         >
                           {source.isReady ? "READY" : "COMING SOON"}
                         </span>
@@ -1397,6 +1639,20 @@ export default function TestimonialsPage() {
             </div>
           </div>
         )}
+
+        {/* Google Import Modal */}
+        <GoogleImportModal
+          isOpen={showGoogleImportModal}
+          onClose={() => setShowGoogleImportModal(false)}
+          onImportSuccess={handleImportSuccess}
+        />
+
+        {/* Facebook Import Modal */}
+        <FacebookImportModal
+          isOpen={showFacebookImportModal}
+          onClose={() => setShowFacebookImportModal(false)}
+          onImportSuccess={handleImportSuccess}
+        />
 
         {/* View Testimonial Modal */}
         {viewingTestimonial && (
@@ -1433,15 +1689,35 @@ export default function TestimonialsPage() {
                     {Array.from({ length: 5 }).map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-5 w-5 ${
-                          i < (viewingTestimonial.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                        }`}
+                        className={`h-5 w-5 ${i < (viewingTestimonial.rating || 0) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+                          }`}
                       />
                     ))}
                   </div>
                 )}
                 <p className="text-gray-700">{viewingTestimonial.text}</p>
               </div>
+
+              {/* Display attachments in view modal */}
+              {viewingTestimonial.attachments && viewingTestimonial.attachments.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Attachments</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {viewingTestimonial.attachments.map((attachment, index) => (
+                      <div key={index} className="aspect-square rounded-lg border border-gray-300 overflow-hidden">
+                        <Image
+                          src={attachment || "/placeholder.svg"}
+                          alt={`Attachment ${index + 1}`}
+                          width={100}
+                          height={100}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="font-medium text-gray-500">Source:</span> <span>{viewingTestimonial.source}</span>
@@ -1449,13 +1725,12 @@ export default function TestimonialsPage() {
                 <div>
                   <span className="font-medium text-gray-500">Status:</span>{" "}
                   <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      viewingTestimonial.status === "Approved"
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${viewingTestimonial.status === "Approved"
                         ? "bg-green-100 text-green-800"
                         : viewingTestimonial.status === "Pending"
                           ? "bg-yellow-100 text-yellow-800"
                           : "bg-blue-100 text-blue-800"
-                    }`}
+                      }`}
                   >
                     {viewingTestimonial.status}
                   </span>
@@ -1565,9 +1840,8 @@ export default function TestimonialsPage() {
                         name="customerName"
                         value={editForm.customerName}
                         onChange={handleEditFormChange}
-                        className={`w-full rounded-md border ${
-                          editFormErrors.customerName ? "border-red-300" : "border-gray-300"
-                        } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                        className={`w-full rounded-md border ${editFormErrors.customerName ? "border-red-300" : "border-gray-300"
+                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
                         placeholder="John Smith"
                       />
                       {editFormErrors.customerName && (
@@ -1585,9 +1859,8 @@ export default function TestimonialsPage() {
                         name="customerCompany"
                         value={editForm.customerCompany}
                         onChange={handleEditFormChange}
-                        className={`w-full rounded-md border ${
-                          editFormErrors.customerCompany ? "border-red-300" : "border-gray-300"
-                        } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                        className={`w-full rounded-md border ${editFormErrors.customerCompany ? "border-red-300" : "border-gray-300"
+                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
                         placeholder="Co-Founder & CTO at Testifolio"
                       />
                       {editFormErrors.customerCompany && (
@@ -1605,9 +1878,8 @@ export default function TestimonialsPage() {
                         name="email"
                         value={editForm.email}
                         onChange={handleEditFormChange}
-                        className={`w-full rounded-md border ${
-                          editFormErrors.email ? "border-red-300" : "border-gray-300"
-                        } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                        className={`w-full rounded-md border ${editFormErrors.email ? "border-red-300" : "border-gray-300"
+                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
                         placeholder="email@example.com"
                       />
                       {editFormErrors.email && <p className="mt-1 text-sm text-red-600">{editFormErrors.email}</p>}
@@ -1711,9 +1983,8 @@ export default function TestimonialsPage() {
                         value={editForm.testimonialText}
                         onChange={handleEditFormChange}
                         rows={4}
-                        className={`w-full rounded-md border ${
-                          editFormErrors.testimonialText ? "border-red-300" : "border-gray-300"
-                        } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
+                        className={`w-full rounded-md border ${editFormErrors.testimonialText ? "border-red-300" : "border-gray-300"
+                          } px-3 py-2 focus:border-[#7c5cff] focus:outline-none focus:ring-1 focus:ring-[#7c5cff]`}
                         placeholder="Enter the testimonial text here..."
                       ></textarea>
                       {editFormErrors.testimonialText && (
@@ -1737,13 +2008,68 @@ export default function TestimonialsPage() {
                     </div>
 
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">Attach upto 3 Images</label>
-                      <div className="flex h-32 w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-blue-300 bg-gray-50 hover:bg-gray-100">
-                        <div className="text-center">
-                          <p className="text-sm font-medium text-blue-600">Click to Upload</p>
-                          <p className="text-xs text-gray-500">or drag and drop</p>
-                          <p className="text-xs text-gray-500">(Max. File size: 25 MB)</p>
-                        </div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">Attach up to 3 Images</label>
+                      <div className="space-y-3">
+                        {/* Edit Attachment Previews */}
+                        {editAttachmentPreviews?.length > 0 && (
+                          <div className="grid grid-cols-3 gap-3">
+                            {editAttachmentPreviews.map((preview, index) => (
+                              <div key={index} className="relative">
+                                <div className="aspect-square rounded-lg border border-gray-300 overflow-hidden">
+                                  <Image
+                                    src={preview || "/placeholder.svg"}
+                                    alt={`Attachment ${index + 1}`}
+                                    width={100}
+                                    height={100}
+                                    className="object-cover w-full h-full"
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeAttachment(index, true)}
+                                  className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Upload Area for Edit */}
+                        {editAttachmentPreviews?.length < 3 && (
+                          <div
+                            onClick={() => triggerAttachmentInput(true)}
+                            className="flex h-32 w-full cursor-pointer items-center justify-center rounded-md border-2 border-dashed border-blue-300 bg-gray-50 hover:bg-gray-100"
+                          >
+                            <div className="text-center">
+                              {uploadingAttachments ? (
+                                <div className="flex flex-col items-center">
+                                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-2" />
+                                  <p className="text-sm font-medium text-blue-600">Uploading...</p>
+                                </div>
+                              ) : (
+                                <>
+                                  <Upload className="mx-auto h-8 w-8 text-blue-600 mb-2" />
+                                  <p className="text-sm font-medium text-blue-600">Click to Upload Images</p>
+                                  <p className="text-xs text-gray-500">or drag and drop</p>
+                                  <p className="text-xs text-gray-500">(Max. File size: 25 MB each)</p>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {editAttachmentPreviews.length}/3 images uploaded
+                                  </p>
+                                </>
+                              )}
+                              <input
+                                type="file"
+                                ref={attachmentInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => handleAttachmentUpload(e, false)}
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 

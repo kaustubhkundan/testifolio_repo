@@ -300,7 +300,7 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Conversion Rate</p>
-                <h3 className="text-3xl font-bold text-gray-900">24%</h3>
+                <h3 className="text-3xl font-bold text-gray-900">0%</h3>
               </div>
               <div className="rounded-full bg-[#eafff0] p-3 text-[#5cff7c]">
                 <svg
@@ -332,7 +332,7 @@ export default function AnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Form Views</p>
-                <h3 className="text-3xl font-bold text-gray-900">1,248</h3>
+                <h3 className="text-3xl font-bold text-gray-900">0</h3>
               </div>
               <div className="rounded-full bg-[#eaf0ff] p-3 text-[#5c7cff]">
                 <svg

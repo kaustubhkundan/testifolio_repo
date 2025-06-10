@@ -34,7 +34,7 @@ export default function SettingsPage() {
 
         {/* Content */}
         <div className="rounded-lg bg-white p-6 shadow-sm">
-          {activeTab === "account" && <AccountSettings />}
+          {activeTab === "account" && <AccountSettings />} 
           {activeTab === "billing" && <BillingSettings />}
           {activeTab === "preferences" && <PreferencesSettings />}
           {activeTab === "branding" && <BrandingSettings />}

@@ -35,6 +35,8 @@ export default function WidgetsPage() {
   // Fetch real testimonial data
   const { testimonials: realTestimonials } = useTestimonials()
 
+  console.log("realTestimonials===",realTestimonials)
+
   // Format real testimonials to match the expected structure
   const testimonials =
     realTestimonials.map((t) => ({
